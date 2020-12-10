@@ -1,0 +1,322 @@
+SUBDESIGN		rx_from_opm
+(
+	f_32m
+,	d_i[7..0]
+,	bit_cnt[11..0]
+,	gc128m
+				: INPUT ;
+
+	fs_ok[7..0]
+,	data_rx[3..0][24..0]
+,	en_rdy_d_rx
+,	num_slot_rx[4..0]
+,	d_opm_i[3..0]
+,	en_h_rx
+,	en_fix_h_rx
+				: OUTPUT ;
+)
+
+VARIABLE
+
+	flt_i[7..0][3..0]			: DFF ;
+	d_flt_i[7..0]				: NODE ;
+	d_pred[7..0]				: DFF ;
+	en_fr[7..0]					: DFF ;
+	cnt_block_fr[7..0][3..0]	: DFF ;
+	en_rx_i[7..0]				: DFF ;
+	d_decod[7..0]				: DFF ;
+	f_8m						: NODE ;
+	en_8m						: DFF ;
+	det_8m[1..0]				: DFF ;
+	en_zfr_8m					: DFF ;
+	fifo_i[7..0][6..0]			: DFFE ;
+	a_fifo[7..0]				: DFF ;
+	cnt_fifo[7..0][2..0]		: DFF ;
+	en_err_fifo[7..0]			: NODE ;
+	d_rx_gc[7..0]				: DFFE ;
+	d_rx_8m[7..0]				: DFFE ;
+	delay_d_rx[7..0][6..0]		: DFFE ;
+	d_o_i[7..0]					: NODE ;
+	shift_opm_i[7..0][24..0]	: DFFE ;
+	yes_fas[7..0]				: NODE ;
+	a_fs[7..0]					: DFFE ;
+	cnt_fas[7..0][1..0]			: DFFE ;
+	phase_rx[7..0][2..0]		: DFFE ;
+	fs_ok[7..0]					: NODE ;
+	cnt_opm[9..0]				: NODE ;
+	last_bit_opm				: DFFE ;
+	cnt_bit_opm[4..0]			: DFFE ;
+	cnt_slot_opm[5..0]			: DFFE ;
+	start_of_slot				: DFFE ;
+	shift_norm[3..0][24..0]		: NODE ;
+	fs_ok_norm[3..0]			: NODE ;
+	en_rdy_d_rx					: NODE ;
+	num_slot_rx[4..0]			: DFFE ;
+	data_rx[3..0][24..0]		: DFFE ;
+	en_hdlc						: DFFE ;
+
+BEGIN
+
+-- Декодирование входа
+	FOR i IN 0 TO 7 GENERATE
+		flt_i[i][3..0].clk = gc128m ;
+		flt_i[i][2..0] = ( flt_i[i][1..0] , d_i[i] ) ;
+		IF ( flt_i[i][2..0] == GND ) THEN
+			flt_i[i][3] = GND ;
+		ELSIF ( flt_i[i][2..0] == VCC ) THEN
+			flt_i[i][3] = VCC ;
+		ELSE
+			flt_i[i][3] = flt_i[i][3] ;
+		END IF ;
+
+		d_flt_i[i] = flt_i[i][3] ;
+
+		d_pred[i].clk = gc128m ;
+		d_pred[i] = d_flt_i[i] ;
+
+		en_fr[i].clk = gc128m ;
+		en_fr[i] = ( d_flt_i[i] XOR d_pred[i] ) ;
+
+		cnt_block_fr[i][3..0].clk = gc128m ;
+		IF ( (cnt_block_fr[i][3..0] == 0) & en_fr[i] ) THEN
+			cnt_block_fr[i][3..0] = 12 ;
+		ELSE
+			cnt_block_fr[i][3..0] = ( (cnt_block_fr[i][3..0] - 1) & (cnt_block_fr[i][3..0] != 0) ) ;
+		END IF ;
+
+		en_rx_i[i].clk = gc128m ;
+		en_rx_i[i] = ( en_fr[i] & (cnt_block_fr[i][3..0] == 0) ) ;
+
+		d_decod[i].clk = gc128m ;
+		d_decod[i] = d_pred[i] ;
+	END GENERATE ;
+
+-- Внутренняя частота 8 МГц
+	f_8m = !bit_cnt[1] ;
+	en_8m.clk = f_32m ;
+	en_8m = ( bit_cnt[1..0] == 2 ) ;
+
+	det_8m[1..0].clk = gc128m ;
+	det_8m[1..0] = ( det_8m[0] , f_8m ) ;
+
+	en_zfr_8m.clk = gc128m ;
+	en_zfr_8m = ( !det_8m[0] & det_8m[1] ) ;
+
+-- Входной FIFO-буфер, переход на 8 МГц
+	FOR i IN 0 TO 7 GENERATE
+		fifo_i[i][6..0].clk = gc128m ;
+		fifo_i[i][6..0].ena = en_rx_i[i] ;
+		fifo_i[i][6..0] = ( fifo_i[i][5..0] , d_decod[i] ) ;
+
+		a_fifo[i].clk = gc128m ;
+		cnt_fifo[i][2..0].clk = gc128m ;
+		IF ( !a_fifo[i] ) THEN
+			IF ( en_rx_i[i] ) THEN
+				a_fifo[i] = ( cnt_fifo[i][2..0] == 3 ) ;
+				cnt_fifo[i][2..0] = ( cnt_fifo[i][2..0] + 1 ) ;
+			ELSE
+				a_fifo[i] = GND ;
+				cnt_fifo[i][2..0] = cnt_fifo[i][2..0] ;
+			END IF ;
+			en_err_fifo[i] = GND ;
+		ELSE
+			CASE ( en_rx_i[i] , en_zfr_8m ) IS
+				WHEN ( 0 , 0 ) =>
+					a_fifo[i] = a_fifo[i] ;
+					cnt_fifo[i][2..0] = cnt_fifo[i][2..0] ;
+					en_err_fifo[i] = GND ;
+				WHEN ( 0 , 1 ) =>
+					IF ( cnt_fifo[i][2..0] == 0 ) THEN
+						a_fifo[i] = GND ;
+						cnt_fifo[i][2..0] = 0 ;
+						en_err_fifo[i] = VCC ;
+					ELSE
+						a_fifo[i] = a_fifo[i] ;
+						cnt_fifo[i][2..0] = ( cnt_fifo[i][2..0] - 1 ) ;
+						en_err_fifo[i] = GND ;
+					END IF ;
+				WHEN ( 1 , 0 ) =>
+					IF ( cnt_fifo[i][2..0] == 7 ) THEN
+						a_fifo[i] = GND ;
+						cnt_fifo[i][2..0] = 0 ;
+						en_err_fifo[i] = VCC ;
+					ELSE
+						a_fifo[i] = a_fifo[i] ;
+						cnt_fifo[i][2..0] = ( cnt_fifo[i][2..0] + 1 ) ;
+						en_err_fifo[i] = GND ;
+					END IF ;
+				WHEN ( 1 , 1 ) =>
+					IF ( cnt_fifo[i][2..0] == 0 ) THEN
+						a_fifo[i] = GND ;
+						cnt_fifo[i][2..0] = 0 ;
+						en_err_fifo[i] = VCC ;
+					ELSE
+						a_fifo[i] = a_fifo[i] ;
+						cnt_fifo[i][2..0] = cnt_fifo[i][2..0] ;
+						en_err_fifo[i] = GND ;
+					END IF ;
+			END CASE ;
+		END IF ;
+
+		d_rx_gc[i].clk = gc128m ;
+		d_rx_gc[i].ena = en_zfr_8m ;
+		IF ( !a_fifo[i] ) THEN
+			d_rx_gc[i] = VCC ;
+		ELSE
+			CASE ( cnt_fifo[i][2..0] ) IS
+				WHEN 0 =>	d_rx_gc[i] = VCC ;
+				WHEN 1 =>	d_rx_gc[i] = fifo_i[i][0] ;
+				WHEN 2 =>	d_rx_gc[i] = fifo_i[i][1] ;
+				WHEN 3 =>	d_rx_gc[i] = fifo_i[i][2] ;
+				WHEN 4 =>	d_rx_gc[i] = fifo_i[i][3] ;
+				WHEN 5 =>	d_rx_gc[i] = fifo_i[i][4] ;
+				WHEN 6 =>	d_rx_gc[i] = fifo_i[i][5] ;
+				WHEN 7 =>	d_rx_gc[i] = fifo_i[i][6] ;
+			END CASE ;
+		END IF ;
+
+		d_rx_8m[i].clk = f_32m ;
+		d_rx_8m[i].ena = en_8m ;
+		d_rx_8m[i] = d_rx_gc[i] ;
+	END GENERATE ;
+
+-- Выравнивание фазы
+	FOR i IN 0 TO 7 GENERATE
+		delay_d_rx[i][6..0].clk = f_32m ;
+		delay_d_rx[i][6..0].ena = en_8m ;
+		delay_d_rx[i][6..0] = ( delay_d_rx[i][5..0] , d_rx_8m[i] ) ;
+
+		CASE ( phase_rx[i][2..0] ) IS
+			WHEN 0 =>	d_o_i[i] = d_rx_8m[i] ;
+			WHEN 1 =>	d_o_i[i] = delay_d_rx[i][0] ;
+			WHEN 2 =>	d_o_i[i] = delay_d_rx[i][1] ;
+			WHEN 3 =>	d_o_i[i] = delay_d_rx[i][2] ;
+			WHEN 4 =>	d_o_i[i] = delay_d_rx[i][3] ;
+			WHEN 5 =>	d_o_i[i] = delay_d_rx[i][4] ;
+			WHEN 6 =>	d_o_i[i] = delay_d_rx[i][5] ;
+			WHEN 7 =>	d_o_i[i] = delay_d_rx[i][6] ;
+		END CASE ;
+
+		shift_opm_i[i][24..0].clk = f_32m ;
+		shift_opm_i[i][24..0].ena = en_8m ;
+		shift_opm_i[i][24..0] = ( shift_opm_i[i][23..0] , d_o_i[i] ) ;
+
+		yes_fas[i] = ( shift_opm_i[i][7..0] == H"D9" ) ;
+
+		a_fs[i].clk = f_32m ;
+		cnt_fas[i][1..0].clk = f_32m ;
+		phase_rx[i][2..0].clk = f_32m ;	
+		a_fs[i].ena = ( en_8m & last_bit_opm ) ;
+		cnt_fas[i][1..0].ena = ( en_8m & last_bit_opm ) ;
+		phase_rx[i][2..0].ena = ( en_8m & last_bit_opm ) ;
+		IF ( !a_fs[i] ) THEN
+			IF ( yes_fas[i] ) THEN
+				IF ( cnt_fas[i][1..0] >= 2 ) THEN
+					a_fs[i] = VCC ;
+					cnt_fas[i][1..0] = 0 ;
+				ELSE
+					a_fs[i] = a_fs[i] ;
+					cnt_fas[i][1..0] = ( cnt_fas[i][1..0] + 1 ) ;
+				END IF ;
+				phase_rx[i][2..0] = phase_rx[i][2..0] ;
+			ELSE
+				a_fs[i] = a_fs[i] ;
+				cnt_fas[i][1..0] = 0 ;
+				phase_rx[i][2..0] = ( phase_rx[i][2..0] + 1 ) ;
+			END IF ;
+		ELSE
+			IF ( !yes_fas[i] ) THEN
+				IF ( cnt_fas[i][1..0] >= 2 ) THEN
+					a_fs[i] = GND ;
+					cnt_fas[i][1..0] = 0 ;
+					phase_rx[i][2..0] = ( phase_rx[i][2..0] + 1 ) ;
+				ELSE
+					a_fs[i] = a_fs[i] ;
+					cnt_fas[i][1..0] = ( cnt_fas[i][1..0] + 1 ) ;
+					phase_rx[i][2..0] = phase_rx[i][2..0] ;
+				END IF ;
+			ELSE
+				a_fs[i] = a_fs[i] ;
+				cnt_fas[i][1..0] = 0 ;
+				phase_rx[i][2..0] = phase_rx[i][2..0] ;
+			END IF ;
+		END IF ;
+
+		fs_ok[i] = a_fs[i] ;
+	END GENERATE ;
+
+-- Счетчик цикла ОПМ
+	cnt_opm[9..0] = ( bit_cnt[11..2] - 9 ) ;
+
+	last_bit_opm.clk = f_32m ;
+	last_bit_opm.ena = en_8m ;
+	last_bit_opm = ( cnt_opm[9..0] == - 2 ) ;
+
+-- Счетчики слотов
+	cnt_bit_opm[4..0].clk = f_32m ;
+	cnt_slot_opm[5..0].clk = f_32m ;
+	start_of_slot.clk = f_32m ;
+	cnt_bit_opm[4..0].ena = en_8m ;
+	cnt_slot_opm[5..0].ena = en_8m ;
+	start_of_slot.ena = en_8m ;
+	IF ( last_bit_opm ) THEN
+		cnt_bit_opm[4..0] = 0 ;
+		cnt_slot_opm[5..0] = 0 ;
+		start_of_slot = VCC ;
+	ELSIF ( cnt_bit_opm[4..0] >= 29 ) THEN
+		cnt_bit_opm[4..0] = 0 ;
+		cnt_slot_opm[5..0] = ( cnt_slot_opm[5..0] + 1 ) ;
+		start_of_slot = ( cnt_slot_opm[5..0] <= 30 ) ;
+	ELSE
+		cnt_bit_opm[4..0] = ( cnt_bit_opm[4..0] + 1 ) ;
+		cnt_slot_opm[5..0] = cnt_slot_opm[5..0] ;
+		start_of_slot = GND ;
+	END IF ;
+
+-- Выбор рабочих потоков
+	FOR i IN 0 TO 3 GENERATE
+		IF ( fs_ok[i] ) THEN
+			shift_norm[i][24..0] = shift_opm_i[i][24..0] ;
+			fs_ok_norm[i] = VCC ;
+		ELSIF ( fs_ok[i + 4] ) THEN
+			shift_norm[i][24..0] = shift_opm_i[i + 4][24..0] ;
+			fs_ok_norm[i] = VCC ;
+		ELSE
+			shift_norm[i][24..0] = VCC ;
+			fs_ok_norm[i] = GND ;
+		END IF ;
+	END GENERATE ;
+
+-- Входные КИ
+	en_rdy_d_rx = ( (cnt_bit_opm[4..0] == 24) & (cnt_slot_opm[5..0] <= 31) & en_8m ) ;
+
+	num_slot_rx[4..0].clk = f_32m ;
+	num_slot_rx[4..0].ena = en_rdy_d_rx ;
+	num_slot_rx[4..0] = cnt_slot_opm[4..0] ;
+
+	FOR i IN 0 TO 3 GENERATE
+		data_rx[i][24..0].clk = f_32m ;
+		data_rx[i][24..0].ena = en_rdy_d_rx ;
+		IF ( fs_ok_norm[i] ) THEN
+			data_rx[i][24..0] = shift_norm[i][24..0] ;
+		ELSE
+			data_rx[i][24..9] = H"FFFF" ;
+			data_rx[i][8..1] = H"DB" ;
+			data_rx[i][0] = VCC ;
+		END IF ;
+	END GENERATE ;
+
+-- Входные HDLC
+	FOR i IN 0 TO 3 GENERATE
+		d_opm_i[i] = shift_norm[i][0] ;
+	END GENERATE ;
+
+	en_hdlc.clk = f_32m ;
+	en_hdlc.ena = en_8m ;
+	en_hdlc = ( (cnt_bit_opm[4..0] >= 24) & (cnt_bit_opm[4..0] <= 28) & (cnt_slot_opm[5..0] <= 31) ) ;
+
+	en_h_rx = ( en_hdlc & en_8m ) ;
+
+	en_fix_h_rx = ( start_of_slot & en_8m ) ;
+
+END ;

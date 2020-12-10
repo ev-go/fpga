@@ -1,0 +1,224 @@
+
+INCLUDE "main_km_170_pld_a";
+---INCLUDE "main_km_170_pld_b";
+INCLUDE "main_km_170_pld_c";
+
+PARAMETERS
+(
+	CONST_DAY =			H"30",
+	CONST_MONTH =		H"10",
+	CONST_CENTURY =		H"20",
+	CONST_YEAR =		H"20"
+);
+
+CONSTANT	CONST_VERSION_HIGH = H"04" ;
+CONSTANT	CONST_VERSION_LOW = H"03" ;
+
+SUBDESIGN km17P_full
+(
+	F16M_P	:INPUT;	--pin 25 -- 32 mhz
+	STB_FRM	:INPUT;	--pin 111
+	PORESET	:INPUT;	--pin 85
+	MASTER	:INPUT; --pin 113
+
+-- CPU interface
+	LBDX[7..0]	: BIDIR;
+	ADDR[9..0] 	:INPUT;
+	LB_WR			:INPUT;
+	LB_RD			:INPUT;
+	CS_PLD_P		:INPUT;
+	INT_PUB		:OUTPUT; --pin 106	Interrupt to CPU
+
+-- BC interface
+	OPMP_RO		:INPUT; -- Frpm OPM Public
+	OPMP_DI		:OUTPUT; -- to OPM Public 
+	OPMP_DE		:OUTPUT; -- Ena OPM Public
+
+-- DSP-55 for Public Network
+	BDR_P[1..0]		:OUTPUT;
+	--BDR_P1		:OUTPUT;
+	BDX_P[1..0]		:INPUT;
+	XF_P :INPUT;
+	INT_0P, BCLK_P, BFS_P :OUTPUT;
+
+-- Interface to MPU-170
+	PUB_TO_PLD[9..1]		:INPUT;
+	PLD_TO_PUB[9..1]		:OUTPUT; -- to MPU
+
+	GNDi		:INPUT; --pin 
+	MUSOR		:OUTPUT;
+	SPEC_TST1	:OUTPUT; -- Test point
+	SPEC_TST3	:OUTPUT; -- Test point
+	UP_TX			:OUTPUT; -- Test point
+	UP_RX			:OUTPUT; -- Test point
+	TP_P			:OUTPUT;
+	PUB_RED		:OUTPUT; --pin 80
+	PUB_GREEN	:OUTPUT; --pin 105
+	P_SW1			:INPUT; --pin 91
+	P_SW2			:INPUT; --pin 90
+	PUB_F15		:OUTPUT; --pin F15 to R378;
+	PUB_J16		:OUTPUT; --pin J16 to R379;
+  
+)
+
+VARIABLE
+f_32m					: GLOBAL ;
+
+	Pld_a	: main_km_170_pld_a WITH	(	CONST_DAY = CONST_DAY,
+													CONST_MONTH = CONST_DAY,
+													CONST_CENTURY = CONST_CENTURY,
+													CONST_YEAR = CONST_YEAR
+												);
+---	Pld_b	: main_km_170_pld_b;
+	Pld_c	: main_km_170_pld_c;
+	
+	LBDX[7..0]	: TRI;---
+
+	LBDXin[7..0]	: NODE;
+	
+	
+	SPEC_TST1_c	
+,	SPEC_TST3_c	
+
+			:NODE;
+
+BEGIN
+
+f_32m	=	F16M_P ;
+
+INT_PUB		= vcc;---GNDi; --pin 106	Interrupt to CPU
+
+	BDR_P[1]	= GNDi;
+	MUSOR		= GNDi;
+	SPEC_TST1	= GNDi; -- Test point
+	SPEC_TST3	= GNDi; -- Test point
+	UP_TX			= GNDi; -- Test point
+	UP_RX			= GNDi; -- Test point
+	TP_P			= GNDi;
+
+
+	PUB_F15		= GNDi; --pin F15 to R378;
+	PUB_J16		= GNDi; --pin J16 to R379;
+	
+	
+	
+(	
+
+	SPEC_TST1_c	
+,	SPEC_TST3_c	
+)	
+
+			= GNDi;
+  
+--- input/output A_B
+---===A
+	PUB_RED			= !Pld_a.opm_fs_ok[0];
+	PUB_GREEN		= Pld_a.opm_fs_ok[0];
+
+	
+	Pld_a.F16M		= f_32m;
+	Pld_a.STB_FRM	= STB_FRM;
+	Pld_a.STB_SW	= Pld_c.STB_A;
+				
+	Pld_a.FROM_OPMC[1]	= OPMP_RO;
+	Pld_a.FROM_OPMC[4..2]	= vcc;
+	Pld_a.FROM_MPUC[9..1]	= PUB_TO_PLD[9..1];
+	Pld_a.FROM_OPMR[1]	= OPMP_RO;
+	Pld_a.FROM_OPMR[4..2]	= vcc;
+	
+-- DSP-55 for Public Network	
+	Pld_a.DSP67_DX0	= 	BDX_P[0];
+
+--- cpu interface 	
+---			all common 
+---			and matrix control registers
+	Pld_a.CS_PLD		= CS_PLD_P;
+	Pld_a.LBXA[9..0]	= ADDR[9..0];
+	Pld_a.LB_WR			= LB_WR;
+	Pld_a.LB_RD			= LB_RD;
+	
+	Pld_a.LBDXin[7..0]	= LBDX[7..0];
+	LBDX[7..0]			= 		Pld_a.LBDXout[7..0];
+	LBDX[7..0].oe 		= 		Pld_a.LBDXoutEna;
+---	
+---===
+
+---===B
+---	Pld_b.F16M		= f_32m;
+---	Pld_b.STB_FRM	= STB_FRM;
+
+--	Pld_b.STB_SW	= Pld_c.STB_B;
+				
+---	Pld_b.FROM_OPMC[1]	= OPMP_RO;
+---	Pld_b.FROM_OPMC[4..2]	= vcc;
+---	Pld_b.FROM_MPUC[9..1]	= PUB_TO_PLD[9..1];
+---	Pld_b.FROM_OPMR[1]	= OPMP_RO;
+---	Pld_b.FROM_OPMR[4..2]	= vcc;
+			
+---	Pld_b.DSP67_DX0	= BDX_P[0];
+
+--- cpu interface 	
+---			
+---			 matrix control registers only
+---	Pld_b.CS_PLD		= CS_PLD_P;
+---	Pld_b.LBXA[9..0]	= ADDR[9..0];
+---	Pld_b.LB_WR			= LB_WR;
+---	Pld_b.LB_RD			= LB_RD;
+	
+---	Pld_b.LBDXin[7..0]	= LBDX[7..0];
+---	LBDX[7..0]			= 		Pld_b.LBDXout[7..0];
+---	LBDX[7..0].oe 		= 		Pld_b.LBDXoutEna;
+---	
+---===
+
+
+			
+--- interconnect
+	Pld_c.VOICE_B[23..0] = Pld_a.VOICE[23..0];---Pld_b.VOICE[23..0];
+	Pld_c.VOICE_A[23..0]	= Pld_a.VOICE[23..0];
+
+	Pld_a.VOICE_I[25..24]  =  Pld_c.VOICE_A_O[25..24];
+	---Pld_b.VOICE_I[25..24]  =  Pld_c.VOICE_B_O[25..24];
+---		
+--- input/output C
+
+	Pld_c.STB_FRM		= STB_FRM;
+	Pld_c.F16M_C		= f_32m;
+	PLD_TO_PUB[9..1]	= Pld_c.TO_MPUC[9..1];
+	OPMP_DI				= Pld_c.TO_OPMC[1];
+	OPMP_DE				= VCC; ---Pld_c.DE_OPMC[4..1]; 
+	
+-- DSP-55 for Public Network
+	INT_0P	= GNDi;
+	BCLK_P	= Pld_c.DSP67_CLKR0;	--- on zhe Pld_c.DSP67_CLKX0;
+	BFS_P		= Pld_c.DSP67_FSR0;  --- on zhe Pld_c.DSP67_FSX0;
+	BDR_P[0]	= Pld_c.DSP67_DR0;	
+	
+---
+--- cpu interface 
+---			0x031f only!!
+	Pld_c.CS_PLD		= CS_PLD_P;
+	Pld_c.LBXA[9..0]	= ADDR[9..0];
+	Pld_c.LB_WR			= LB_WR;
+	Pld_c.LB_RD			= LB_RD;
+	
+	Pld_c.LBDXin[7..0]	= LBDX[7..0];
+	LBDX[7..0]			= 		Pld_c.LBDXout[7..0];
+	LBDX[7..0].oe 		= 		Pld_c.LBDXoutEna;
+---	
+---===
+
+				
+	
+	
+---	
+	
+	
+	SPEC_TST1_c	= Pld_c.SPEC_TST1;
+	SPEC_TST3_c	= Pld_c.SPEC_TST3;
+
+	
+
+
+END; 
+

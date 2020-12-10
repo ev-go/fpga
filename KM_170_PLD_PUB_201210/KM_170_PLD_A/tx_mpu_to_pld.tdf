@@ -1,0 +1,78 @@
+SUBDESIGN		tx_mpu_to_pld
+(
+	f_32m
+,	bit_cnt[11..0]
+,	data_tx[8..0][24..0]
+,	d_h_mpu[8..0]
+,	d_h_pult[8..0]
+				: INPUT ;
+
+	en_rdy_d_tx
+,	num_slot_tx
+,	d_to_pld[8..0]
+,	en_h_mpu_tx
+,	en_h_pult_tx
+				: OUTPUT ;
+)
+
+VARIABLE
+
+	en_0m5					: DFF ;
+	cnt_tx_mpu[5..0]		: NODE ;
+	num_slot_tx				: DFFE ;
+	sync_word[7..0]			: NODE ;
+	shift_o[8..0][24..0]	: DFFE ;
+	en_hdlc[1..0]			: DFFE ;
+
+BEGIN
+
+	en_0m5.clk = f_32m ;
+	en_0m5 = ( bit_cnt[5..0] == -2 ) ;
+
+	cnt_tx_mpu[5..0] = ( bit_cnt[11..6] + 26 ) ;
+
+-- Запрос выходных данных
+	en_rdy_d_tx = ( ((cnt_tx_mpu[5..0] == -1) # (cnt_tx_mpu[5..0] == 24)) & en_0m5 ) ;
+
+	num_slot_tx.clk = f_32m ;
+	num_slot_tx.ena = en_rdy_d_tx ;
+	num_slot_tx = ( cnt_tx_mpu[5..0] <= 24 ) ;
+
+-- Выходные потоки
+	sync_word[7..0] = B"11011001" ;
+
+	FOR i IN 0 TO 8 GENERATE
+		shift_o[i][24..0].clk = f_32m ;
+		shift_o[i][24..0].ena = en_0m5 ;
+		IF ( cnt_tx_mpu[5..0] == -8 ) THEN
+			shift_o[i][24..17] = sync_word[7..0] ;
+			shift_o[i][16..0] = VCC ;
+		ELSIF ( (cnt_tx_mpu[5..0] == 0) # (cnt_tx_mpu[5..0] == 25) ) THEN
+			shift_o[i][24..0] = data_tx[i][24..0] ;
+		ELSIF ( en_hdlc[0] ) THEN
+			shift_o[i][24] = d_h_mpu[i] ;
+			shift_o[i][23..0] = VCC ;
+		ELSIF ( en_hdlc[1] ) THEN
+			shift_o[i][24] = d_h_pult[i] ;
+			shift_o[i][23..0] = VCC ;
+		ELSE
+			shift_o[i][24..0] = ( shift_o[i][23..0] , 1 ) ;
+		END IF ;
+
+		d_to_pld[i] = shift_o[i][24] ;
+	END GENERATE ;
+
+--	HDLC
+	en_hdlc[0].clk = f_32m ;
+	en_hdlc[0].ena = en_0m5 ;
+	en_hdlc[0] = ( (cnt_tx_mpu[5..0] >= 49) & (cnt_tx_mpu[5..0] <= 52) ) ;
+
+	en_hdlc[1].clk = f_32m ;
+	en_hdlc[1].ena = en_0m5 ;
+	en_hdlc[1] = ( cnt_tx_mpu[5..0] == 53 ) ;
+
+	en_h_mpu_tx = ( en_hdlc[0] & en_0m5 ) ;
+
+	en_h_pult_tx = ( en_hdlc[1] & en_0m5 ) ;
+
+END ;

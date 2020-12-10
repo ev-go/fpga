@@ -1,0 +1,521 @@
+INCLUDE		"lpm_mux.inc" ;
+INCLUDE		"buf_opm.inc" ;
+INCLUDE		"buf_mpu.inc" ;
+INCLUDE		"buf_dsp.inc" ;
+INCLUDE		"mem_sw.inc" ;
+
+SUBDESIGN		commutator
+(
+	f_32m
+,	gclk
+,	bit_cnt[11..0]
+,	last_bit
+,	sect_wr[1..0]
+
+,	data_opm_i[3..0][24..0]
+,	en_rdy_opm_i
+,	num_slot_opm_i[4..0]
+
+,	data_mpu_i[8..0][24..0]
+,	en_rdy_mpu_i
+,	num_slot_mpu_i
+
+,	data_dsp_i[24..0]
+,	en_rdy_dsp_i
+,	num_slot_dsp_i[6..0]
+
+,	en_rdy_opm_o
+,	num_slot_opm_o[4..0]
+
+,	en_rdy_mpu_o
+,	num_slot_mpu_o
+
+,	en_rdy_dsp_o
+,	num_slot_dsp_o[6..0]
+
+,	cpu_a[9..0]
+,	cpu_d_i[7..0]
+,	map_cs
+,	cpu_wr
+,	cpu_rd
+
+,	stb_wr_sw
+
+,	d_ki_const[24..0]
+,	d_ki_ff[24..0]
+
+,	do_put_err
+,	adr_ki_put_err[8..0]
+				: INPUT ;
+
+	cpu_d_o[7..0]
+,	crc_reg[31..0]
+,	crc_ready
+,	data_opm_o[3..0][24..0]
+,	data_mpu_o[8..0][24..0]
+,	data_dsp_o[24..0]
+,	pre_a_rd_const[7..0]
+,	d_const_ff_i[24..0]
+,	num_ki_const_i[7..0]
+,	en_const_i
+,	en_ff_i
+,	res_do_err
+				: OUTPUT ;
+)
+
+VARIABLE
+
+	m_buf_opm				: buf_opm ;
+	d_to_buf_opm[24..0]		: NODE ;
+	adr_wr_opm[8..0]		: NODE ;
+	adr_rd_opm[8..0]		: NODE ;
+	d_from_buf_opm[24..0]	: NODE ;
+	en_wr_opm				: DFF ;
+	cnt_wr_opm[1..0]		: DFF ;
+	sect_rd_for_opm[1..0]	: DFFE ;
+	mux_d_opm				: lpm_mux WITH ( LPM_WIDTH = 25, LPM_SIZE = 4, LPM_WIDTHS = 2 ) ;
+	m_buf_mpu				: buf_mpu ;
+	d_to_buf_mpu[24..0]		: NODE ;
+	adr_wr_mpu[6..0]		: NODE ;
+	adr_rd_mpu[6..0]		: NODE ;
+	d_from_buf_mpu[24..0]	: NODE ;
+	en_wr_mpu				: DFF ;
+	cnt_wr_mpu[3..0]		: DFF ;
+	sect_rd_for_mpu[1..0]	: DFFE ;
+	mux_d_mpu				: lpm_mux WITH ( LPM_WIDTH = 25, LPM_SIZE = 9, LPM_WIDTHS = 4 ) ;
+	m_buf_dsp				: buf_dsp ;
+	d_to_buf_dsp[24..0]		: NODE ;
+	adr_wr_dsp[8..0]		: NODE ;
+	adr_rd_dsp[8..0]		: NODE ;
+	d_from_buf_dsp[24..0]	: NODE ;
+	en_wr_dsp				: DFF ;
+	sect_rd_for_dsp[1..0]	: DFFE ;
+	m_mem_sw				: mem_sw ;
+	d_map_rd_cpu[15..0]		: NODE ;
+	d_wr_map[9..0]			: DFFE ;
+	cpu_a_g[2..0][9..1]		: DFF ;
+	cpu_d_g[2..0][7..0]		: DFF ;
+	cpu_wr_map_g[1..0]		: DFF ;
+	en_wr_map				: NODE ;
+	cpu_rd_map_g			: DFF ;
+	adr_cpu_crc[8..0]		: NODE ;
+	cnt_mem[8..0]			: DFF ;
+	cnt_calc[4..0]			: DFF ;
+	shift_d[15..0]			: DFF ;
+	d_bit					: NODE ;
+	crc_tek[31..0]			: DFF ;
+	en_wr_crc				: DFF ;
+	crc_reg[31..0]			: DFFE ;
+	crc_ready				: DFF ;
+	adr_rd_map[8..0]		: NODE ;
+	d_from_map[15..0]		: NODE ;
+	ready_o[15..0]			: DFF ;
+	mux_rdy_o				: lpm_mux WITH ( LPM_WIDTH = 1, LPM_SIZE = 16, LPM_WIDTHS = 4 ) ;
+	tek_rdy_o				: NODE ;
+	chan[3..0]				: NODE ;
+	ch_n[1..0][3..0]		: DFF ;
+	ch_rdy[1..0]			: DFF ;
+	adr_ki_forming[8..0]	: DFF ;
+	sect_rd[1..0]			: NODE ;
+	sw_buf_rd[1..0]			: DFF ;
+	data_rd_comm[24..0]		: NODE ;
+	data_to_tx[24..0]		: NODE ;
+	data_opm_o[3..0][24..0]	: DFFE ;
+	data_mpu_o[8..0][24..0]	: DFFE ;
+	data_dsp_o[24..0]		: DFFE ;
+	d_const_ff_i[24..0]		: DFF ;
+	dop_d_from_map[15..0]	: DFF ;
+	num_ki_const_i[7..0]	: DFF ;
+	en_const_i				: DFF ;
+	en_ff_i					: DFF ;
+	put_test_const			: DFF ;
+	put_test_ff				: DFF ;
+	d_comm_or_test[24..0]	: NODE ;
+	do_put_err_32m[1..0]	: DFF ;
+	adr_ki_err_eq			: NODE ;
+	en_put_err				: NODE ;
+	put_err_to_d			: DFF ;
+	adr_put_err_bad			: NODE ;
+	en_res_do_err			: NODE ;
+	res_do_err				: DFF ;
+
+BEGIN
+
+-- Буфер OPM
+	m_buf_opm.clock = f_32m ;
+	m_buf_opm.data[24..0] = d_to_buf_opm[24..0] ;
+	m_buf_opm.wraddress[8..0] = adr_wr_opm[8..0] ;
+	m_buf_opm.wren = en_wr_opm ;
+	m_buf_opm.rdaddress[8..0] = adr_rd_opm[8..0] ;
+
+	d_from_buf_opm[24..0] = m_buf_opm.q[24..0] ;
+
+	en_wr_opm.clk = f_32m ;
+	IF ( !en_wr_opm ) THEN
+		en_wr_opm = en_rdy_opm_i ;
+	ELSE
+		en_wr_opm = ( cnt_wr_opm[1..0] < 3 ) ;
+	END IF ;
+
+	cnt_wr_opm[1..0].clk = f_32m ;
+	cnt_wr_opm[1..0] = ( (cnt_wr_opm[1..0] + 1) & en_wr_opm & (cnt_wr_opm[1..0] < 3) ) ;
+
+	mux_d_opm.data[3..0][24..0] = data_opm_i[3..0][24..0] ;
+	mux_d_opm.sel[1..0] = cnt_wr_opm[1..0] ;
+	d_to_buf_opm[24..0] = mux_d_opm.result[24..0] ;
+
+	adr_wr_opm[8..7] = sect_wr[1..0] ;
+	adr_wr_opm[6..5] = cnt_wr_opm[1..0] ;
+	adr_wr_opm[4..0] = num_slot_opm_i[4..0] ;
+
+	sect_rd_for_opm[1..0].clk = f_32m ;
+	sect_rd_for_opm[1..0].ena = ( en_rdy_opm_o & (num_slot_opm_o[4..0] == VCC) ) ;
+	sect_rd_for_opm[1..0] = ( sect_wr[1..0] - 1 ) ;
+
+-- Буфер MPU
+	m_buf_mpu.clock = f_32m ;
+	m_buf_mpu.data[24..0] = d_to_buf_mpu[24..0] ;
+	m_buf_mpu.wraddress[6..0] = adr_wr_mpu[6..0] ;
+	m_buf_mpu.wren = en_wr_mpu ;
+	m_buf_mpu.rdaddress[6..0] = adr_rd_mpu[6..0] ;
+
+	d_from_buf_mpu[24..0] = m_buf_mpu.q[24..0] ;
+
+	en_wr_mpu.clk = f_32m ;
+	IF ( !en_wr_mpu ) THEN
+		en_wr_mpu = en_rdy_mpu_i ;
+	ELSE
+		en_wr_mpu = ( cnt_wr_mpu[3..0] < 8 ) ;
+	END IF ;
+
+	cnt_wr_mpu[3..0].clk = f_32m ;
+	cnt_wr_mpu[3..0] = ( (cnt_wr_mpu[3..0] + 1) & en_wr_mpu & (cnt_wr_mpu[3..0] < 8) ) ;
+
+	mux_d_mpu.data[8..0][24..0] = data_mpu_i[8..0][24..0] ;
+	mux_d_mpu.sel[3..0] = cnt_wr_mpu[3..0] ;
+	d_to_buf_mpu[24..0] = mux_d_mpu.result[24..0] ;
+
+	adr_wr_mpu[6..5] = sect_wr[1..0] ;
+	adr_wr_mpu[4] = num_slot_mpu_i ;
+	adr_wr_mpu[3..0] = cnt_wr_mpu[3..0] ;
+
+	sect_rd_for_mpu[1..0].clk = f_32m ;
+	sect_rd_for_mpu[1..0].ena = ( en_rdy_mpu_o & num_slot_mpu_o ) ;
+	sect_rd_for_mpu[1..0] = ( sect_wr[1..0] - 1 ) ;
+
+-- Буфер DSP
+	m_buf_dsp.clock = f_32m ;
+	m_buf_dsp.data[24..0] = d_to_buf_dsp[24..0] ;
+	m_buf_dsp.wraddress[8..0] = adr_wr_dsp[8..0] ;
+	m_buf_dsp.wren = en_wr_dsp ;
+	m_buf_dsp.rdaddress[8..0] = adr_rd_dsp[8..0] ;
+
+	d_from_buf_dsp[24..0] = m_buf_dsp.q[24..0] ;
+
+	en_wr_dsp.clk = f_32m ;
+	en_wr_dsp = en_rdy_dsp_i ;
+
+	d_to_buf_dsp[24..0] = data_dsp_i[24..0] ;
+
+	adr_wr_dsp[8..7] = sect_wr[1..0] ;
+	adr_wr_dsp[6..0] = num_slot_dsp_i[6..0] ;
+
+	sect_rd_for_dsp[1..0].clk = f_32m ;
+	sect_rd_for_dsp[1..0].ena = ( en_rdy_dsp_o & (num_slot_dsp_o[6..0] == VCC) ) ;
+	sect_rd_for_dsp[1..0] = ( sect_wr[1..0] - 1 ) ;
+
+-- Матрица коммутации (маппер)
+-- Запись/Чтение от процессора
+	m_mem_sw.clock_a = gclk ;
+	m_mem_sw.address_a[8..0] = adr_cpu_crc[8..0] ;
+	m_mem_sw.data_a[15..0] = ( cpu_d_g[2][7..0] , d_wr_map[7..0] ) ;
+	m_mem_sw.wren_a = en_wr_map ;
+
+	d_map_rd_cpu[15..0] = m_mem_sw.q_a[15..0] ;
+
+	d_wr_map[9..0].clk = cpu_wr ;
+	d_wr_map[7..0].ena = ( map_cs & !cpu_a[0] ) ;
+	d_wr_map[9..8].ena = ( map_cs & cpu_a[0] ) ;
+	d_wr_map[7..0] = cpu_d_i[7..0] ;
+	d_wr_map[9..8] = cpu_d_i[1..0] ;
+
+	cpu_a_g[2..0][9..1].clk = gclk ;
+	cpu_a_g[0][9..1] = cpu_a[9..1] ;
+	cpu_a_g[1][9..1] = cpu_a_g[0][9..1] ;
+	cpu_a_g[2][9..1] = cpu_a_g[1][9..1] ;
+
+	cpu_d_g[2..0][7..0].clk = gclk ;
+	cpu_d_g[0][7..0] = cpu_d_i[7..0] ;
+	cpu_d_g[1][7..0] = cpu_d_g[0][7..0] ;
+	cpu_d_g[2][7..0] = cpu_d_g[1][7..0] ;
+
+	cpu_wr_map_g[1..0].clk = gclk ;
+	cpu_wr_map_g[0] = ( map_cs & cpu_a[0] & !cpu_wr ) ;
+	cpu_wr_map_g[1] = cpu_wr_map_g[0] ;
+
+	en_wr_map = ( !cpu_wr_map_g[0] & cpu_wr_map_g[1] ) ;
+
+	cpu_rd_map_g.clk = gclk ;
+	cpu_rd_map_g = ( map_cs & !cpu_rd ) ;
+
+	IF ( en_wr_map ) THEN
+		adr_cpu_crc[8..0] = cpu_a_g[2][9..1] ;
+	ELSIF ( cpu_rd_map_g ) THEN
+		adr_cpu_crc[8..0] = cpu_a_g[0][9..1] ;
+	ELSE
+		adr_cpu_crc[8..0] = cnt_mem[8..0] ;
+	END IF ;
+
+	cpu_d_o[7..0] = ( (d_map_rd_cpu[7..0] & !cpu_a[0]) # (d_map_rd_cpu[15..8] & cpu_a[0]) ) ;
+
+-- Подсчёт CRC маппера
+	cnt_mem[8..0].clk = gclk ;
+	cnt_calc[4..0].clk = gclk ;
+	IF ( en_wr_map ) THEN
+		cnt_mem[8..0] = 0 ;
+		cnt_calc[4..0] = 0 ;
+	ELSIF ( cpu_rd_map_g & (cnt_calc[4..0] == 0) ) THEN
+		cnt_mem[8..0] = cnt_mem[8..0] ;
+		cnt_calc[4..0] = 0 ;
+	ELSIF ( cnt_calc[4..0] < 17 ) THEN
+		cnt_mem[8..0] = cnt_mem[8..0] ;
+		cnt_calc[4..0] = ( cnt_calc[4..0] + 1 ) ;
+	ELSE
+		cnt_mem[8..0] = ( (cnt_mem[8..0] + 1) & (cnt_mem[8..0] < H"17F") ) ;
+		cnt_calc[4..0] = 0 ;
+	END IF ;
+
+	shift_d[15..0].clk = gclk ;
+	IF ( cnt_calc[4..0] == 1 ) THEN
+		shift_d[15..0] = d_map_rd_cpu[15..0] ;
+	ELSE
+		shift_d[15..0] = ( 1 , shift_d[15..1] ) ;
+	END IF ;
+	d_bit = shift_d[0] ;
+
+	crc_tek[31..0].clk = gclk ;
+	IF ( (cnt_calc[4..0] == 0) & (cnt_mem[8..0] == 0) ) THEN
+		crc_tek[31..0] = VCC ;
+	ELSIF ( cnt_calc[4..0] >= 2 ) THEN
+		crc_tek[31..0] = ( crc_tek[30..26] , (d_bit XOR crc_tek[31] XOR crc_tek[25]) , crc_tek[24..23] , (d_bit XOR crc_tek[31] XOR crc_tek[22]) ,
+			(d_bit XOR crc_tek[31] XOR crc_tek[21]) , crc_tek[20..16] , (d_bit XOR crc_tek[31] XOR crc_tek[15]) , crc_tek[14..12] ,
+			(d_bit XOR crc_tek[31] XOR crc_tek[11]) , (d_bit XOR crc_tek[31] XOR crc_tek[10]) , (d_bit XOR crc_tek[31] XOR crc_tek[9]) ,
+			crc_tek[8] , (d_bit XOR crc_tek[31] XOR crc_tek[7]) , (d_bit XOR crc_tek[31] XOR crc_tek[6]) , crc_tek[5] ,
+			(d_bit XOR crc_tek[31] XOR crc_tek[4]) , (d_bit XOR crc_tek[31] XOR crc_tek[3]) , crc_tek[2] , (d_bit XOR crc_tek[31] XOR crc_tek[1]) ,
+			(d_bit XOR crc_tek[31] XOR crc_tek[0]) , (d_bit XOR crc_tek[31]) ) ;
+	ELSE
+		crc_tek[31..0] = crc_tek[31..0] ;
+	END IF ;
+
+	en_wr_crc.clk = gclk ;
+	en_wr_crc = ( (cnt_calc[4..0] == 17) & (cnt_mem[8..0] == H"17F") ) ;
+
+	crc_reg[31..0].clk = gclk ;
+	crc_reg[31..0].ena = en_wr_crc ;
+	FOR i IN 0 TO 31 GENERATE
+		crc_reg[i] = !crc_tek[31-i] ;
+	END GENERATE ;
+
+	crc_ready.clk = gclk ;
+	IF ( en_wr_map ) THEN
+		crc_ready = GND ;
+	ELSIF ( en_wr_crc ) THEN
+		crc_ready = VCC ;
+	ELSE
+		crc_ready = crc_ready ;
+	END IF ;
+
+-- Чтение коммутатором
+	m_mem_sw.clock_b = f_32m ;
+	m_mem_sw.address_b[8..0] = adr_rd_map[8..0] ;
+	m_mem_sw.data_b[15..0] = GND ;
+	m_mem_sw.wren_b = GND ;
+
+	d_from_map[15..0] = m_mem_sw.q_b[15..0] ;
+
+-- Запросы от ПРД
+	FOR i IN 0 TO 3 GENERATE
+		ready_o[i].clk = f_32m ;
+		IF ( en_rdy_opm_o ) THEN
+			ready_o[i] = VCC ;
+		ELSIF ( (ch_n[1][3..0] == i) & ch_rdy[1] ) THEN
+			ready_o[i] = GND ;
+		ELSE
+			ready_o[i] = ready_o[i] ;
+		END IF ;
+	END GENERATE ;
+
+	FOR i IN 4 TO 12 GENERATE
+		ready_o[i].clk = f_32m ;
+		IF ( en_rdy_mpu_o ) THEN
+			ready_o[i] = VCC ;
+		ELSIF ( (ch_n[1][3..0] == i) & ch_rdy[1] ) THEN
+			ready_o[i] = GND ;
+		ELSE
+			ready_o[i] = ready_o[i] ;
+		END IF ;
+	END GENERATE ;
+
+	ready_o[13].clk = f_32m ;
+	IF ( en_rdy_dsp_o ) THEN
+		ready_o[13] = VCC ;
+	ELSIF ( (ch_n[1][3..0] == 13) & ch_rdy[1] ) THEN
+		ready_o[13] = GND ;
+	ELSE
+		ready_o[13] = ready_o[13] ;
+	END IF ;
+
+	FOR i IN 14 TO 15 GENERATE
+		ready_o[i].clk = f_32m ;
+		IF ( last_bit ) THEN
+			ready_o[i] = VCC ;
+		ELSIF ( (ch_n[1][3..0] == i) & ch_rdy[1] ) THEN
+			ready_o[i] = GND ;
+		ELSE
+			ready_o[i] = ready_o[i] ;
+		END IF ;
+	END GENERATE ;
+
+	mux_rdy_o.data[15..0][0] = ready_o[15..0] ;
+	mux_rdy_o.sel[3..0] = chan[3..0] ;
+	tek_rdy_o = mux_rdy_o.result[0] ;
+
+-- Каналы коммутатора
+	chan[3..0] = bit_cnt[3..0] ;
+
+	ch_n[1..0][3..0].clk = f_32m ;
+	ch_n[0][3..0] = chan[3..0] ;
+	ch_n[1][3..0] = ch_n[0][3..0] ;
+
+	ch_rdy[1..0].clk = f_32m ;
+	ch_rdy[1..0] = ( ch_rdy[0] , tek_rdy_o ) ;
+
+-- Адрес чтения маппера
+	IF ( chan[3..0] <= 3 ) THEN
+		adr_rd_map[8..0] = ( B"0" , chan[2..0] , num_slot_opm_o[4..0] ) ;
+	ELSIF ( chan[3..0] <= 12 ) THEN
+		adr_rd_map[8..0] = ( B"0" , B"101" , num_slot_mpu_o , (chan[3..0] - 4) ) ;
+	ELSIF ( chan[3..0] == 13 ) THEN
+		adr_rd_map[8..0] = ( B"1" , B"0" , num_slot_dsp_o[6..0] ) ;
+	ELSIF ( chan[3..0] == 14 ) THEN
+		adr_rd_map[8..0] = ( B"0" , B"110" , B"00000" ) ;
+	ELSE
+		adr_rd_map[8..0] = ( B"0" , B"110" , B"00001" ) ;
+	END IF ;
+
+-- Номер формируемого канала
+	adr_ki_forming[8..0].clk = f_32m ;
+	adr_ki_forming[8..0] = adr_rd_map[8..0] ;
+
+-- Адрес чтения буфера
+	IF ( ch_n[0][3..0] <= 3 ) THEN
+		sect_rd[1..0] = sect_rd_for_opm[1..0] ;
+	ELSIF ( ch_n[0][3..0] <= 12 ) THEN
+		sect_rd[1..0] = sect_rd_for_mpu[1..0] ;
+	ELSIF ( ch_n[0][3..0] == 13 ) THEN
+		sect_rd[1..0] = sect_rd_for_dsp[1..0] ;
+	ELSE
+		sect_rd[1..0] = ( sect_wr[1..0] - 1 ) ;
+	END IF ;
+
+	adr_rd_opm[8..0] = ( sect_rd[1..0] , d_from_map[6..0] ) ;
+	adr_rd_mpu[6..0] = ( sect_rd[1..0] , d_from_map[4..0] ) ;
+	adr_rd_dsp[8..0] = ( sect_rd[1..0] , d_from_map[6..0] ) ;
+
+	sw_buf_rd[1..0].clk = f_32m ;
+	IF ( !d_from_map[8] ) THEN
+		IF ( d_from_map[7..5] <= B"011" ) THEN
+			sw_buf_rd[1..0] = 0 ;	-- OPM
+		ELSE
+			sw_buf_rd[1..0] = 1 ;	-- MPU
+		END IF ;
+	ELSE
+		IF ( !d_from_map[7] ) THEN
+			sw_buf_rd[1..0] = 2 ;	-- DSP
+		ELSE
+			sw_buf_rd[1..0] = 3 ;
+		END IF ;
+	END IF ;
+
+-- Выходные данные
+	CASE ( sw_buf_rd[1..0] ) IS
+		WHEN 0 =>		data_rd_comm[24..0] = d_from_buf_opm[24..0] ;
+		WHEN 1 =>		data_rd_comm[24..0] = d_from_buf_mpu[24..0] ;
+		WHEN 2 =>		data_rd_comm[24..0] = d_from_buf_dsp[24..0] ;
+		WHEN OTHERS =>	data_rd_comm[24..9] = H"FFFF" ;	-- VOICE DATA
+						data_rd_comm[8..1] = H"DB" ;	-- CRC
+						data_rd_comm[0] = VCC ;			-- ID
+	END CASE ;
+
+	data_to_tx[24..0] = ( (d_comm_or_test[24..0] & !put_err_to_d) # (!d_comm_or_test[24..0] & put_err_to_d) ) ;
+
+	FOR i IN 0 TO 3 GENERATE
+		data_opm_o[i][24..0].clk = f_32m ;
+		data_opm_o[i][24..0].ena = ( (ch_n[1][3..0] == i) & ch_rdy[1] ) ;
+		data_opm_o[i][24..0] = data_to_tx[24..0] ;
+	END GENERATE ;
+
+	FOR i IN 0 TO 8 GENERATE
+		data_mpu_o[i][24..0].clk = f_32m ;
+		data_mpu_o[i][24..0].ena = ( (ch_n[1][3..0] == (i + 4)) & ch_rdy[1] ) ;
+		data_mpu_o[i][24..0] = data_to_tx[24..0] ;
+	END GENERATE ;
+
+	data_dsp_o[24..0].clk = f_32m ;
+	data_dsp_o[24..0].ena = ( (ch_n[1][3..0] == 13) & ch_rdy[1] ) ;
+	data_dsp_o[24..0] = data_to_tx[24..0] ;
+
+-- Прием тестовых констант
+	d_const_ff_i[24..0].clk = f_32m ;
+	d_const_ff_i[24..0] = data_rd_comm[24..0] ;
+
+	dop_d_from_map[15..0].clk = f_32m ;
+	dop_d_from_map[15..0] = d_from_map[15..0] ;
+
+	num_ki_const_i[7..0].clk = f_32m ;
+	num_ki_const_i[7..0] = dop_d_from_map[7..0] ;
+
+	en_const_i.clk = f_32m ;
+	en_const_i = ( (ch_n[1][3..0] == 14) & ch_rdy[1] ) ;
+
+	en_ff_i.clk = f_32m ;
+	en_ff_i = ( (ch_n[1][3..0] == 15) & ch_rdy[1] ) ;
+
+-- Вставка тестовых констант
+	pre_a_rd_const[7..0] = adr_ki_forming[7..0] ;
+
+	put_test_const.clk = f_32m ;
+	put_test_const = ( d_from_map[8..0] == (B"0" , B"110" , B"00000") ) ;
+
+	put_test_ff.clk = f_32m ;
+	put_test_ff = ( d_from_map[8..0] == (B"0" , B"110" , B"00001") ) ;
+
+	IF ( put_test_const ) THEN
+		d_comm_or_test[24..0] = d_ki_const[24..0] ;
+	ELSIF ( put_test_ff ) THEN
+		d_comm_or_test[24..0] = d_ki_ff[24..0] ;
+	ELSE
+		d_comm_or_test[24..0] = data_rd_comm[24..0] ;
+	END IF ;
+
+-- Ввод ошибок в выходные данные
+	do_put_err_32m[1..0].clk = f_32m ;
+	do_put_err_32m[0] = ( do_put_err & !en_res_do_err ) ;
+	do_put_err_32m[1] = ( do_put_err_32m[0] & !en_res_do_err ) ;
+
+	adr_ki_err_eq = ( adr_ki_put_err[8..0] == adr_ki_forming[8..0] ) ;
+
+	en_put_err = ( adr_ki_err_eq & do_put_err_32m[1] & ch_rdy[0] ) ;
+
+	put_err_to_d.clk = f_32m ;
+	put_err_to_d = en_put_err ;
+
+	adr_put_err_bad = ( (adr_ki_put_err[8..5] == B"0100") # ((adr_ki_put_err[8..5] == B"0101") & (adr_ki_put_err[3..0] > 8)) # (adr_ki_put_err[8..6] == B"011") # (adr_ki_put_err[8..7] == B"11") ) ;
+
+	en_res_do_err = ( en_put_err # (adr_put_err_bad & do_put_err_32m[1]) ) ;
+
+	res_do_err.clk = f_32m ;
+	res_do_err = en_res_do_err ;
+	res_do_err.clrn = LCELL( LCELL( do_put_err ) ) ;
+
+END ;

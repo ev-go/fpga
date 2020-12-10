@@ -1,0 +1,41 @@
+SUBDESIGN		tx_dsp_to_pld
+(
+	f_32m
+,	bit_cnt[11..0]
+,	data_tx[24..0]
+				: INPUT ;
+
+	en_rdy_d_tx
+,	num_slot_tx[6..0]
+,	d_to_pld
+				: OUTPUT ;
+)
+
+VARIABLE
+
+	cnt_tx_dsp[11..0]	: NODE ;
+	num_slot_tx[6..0]	: DFFE ;
+	shift_o[24..0]		: DFFE ;
+
+BEGIN
+
+	cnt_tx_dsp[11..0] = ( bit_cnt[11..0] + 27 ) ;
+
+-- Запрос выходных данных
+	en_rdy_d_tx = ( cnt_tx_dsp[4..0] == 0 ) ;
+
+	num_slot_tx[6..0].clk = f_32m ;
+	num_slot_tx[6..0].ena = en_rdy_d_tx ;
+	num_slot_tx[6..0] = ( cnt_tx_dsp[11..5] + 1 );
+
+-- Выходной поток
+	shift_o[24..0].clk = f_32m ;
+	IF ( cnt_tx_dsp[4..0] == 0 ) THEN
+		shift_o[24..0] = data_tx[24..0] ;
+	ELSE
+		shift_o[24..0] = ( shift_o[23..0] , 1 ) ;
+	END IF ;
+
+	d_to_pld = shift_o[24] ;
+
+END ;

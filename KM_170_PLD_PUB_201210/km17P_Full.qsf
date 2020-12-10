@@ -1,0 +1,364 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 1991-2016 Altera Corporation. All rights reserved.
+# Your use of Altera Corporation's design tools, logic functions
+# and other software and tools, and its AMPP partner logic
+# functions, and any output files from any of the foregoing
+# (including device programming or simulation files), and any
+# associated documentation or information are expressly subject
+# to the terms and conditions of the Altera Program License
+# Subscription Agreement, the Altera Quartus Prime License Agreement,
+# the Altera MegaCore Function License Agreement, or other
+# applicable license agreement, including, without limitation,
+# that your use is for the sole purpose of programming logic
+# devices manufactured by Altera and sold by Altera or its
+# authorized distributors.  Please refer to the applicable
+# agreement for further details.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime
+# Version 16.0.0 Build 211 04/27/2016 SJ Lite Edition
+# Date created = 11:35:00  March 23, 2017
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		km17P_Full_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Altera recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus Prime software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 1991-2011 Altera Corporation
+# Your use of Altera Corporation's design tools, logic functions
+# and other software and tools, and its AMPP partner logic
+# functions, and any output files from any of the foregoing
+# (including device programming or simulation files), and any
+# associated documentation or information are expressly subject
+# to the terms and conditions of the Altera Program License
+# Subscription Agreement, Altera MegaCore Function License
+# Agreement, or other applicable license agreement, including,
+# without limitation, that your use is for the sole purpose of
+# programming logic devices manufactured by Altera and sold by
+# Altera or its authorized distributors.  Please refer to the
+# applicable agreement for further details.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus II 32-bit
+# Version 11.1 Build 259 01/25/2012 Service Pack 2 SJ Web Edition
+# Date created = 10:29:33  September 19, 2013
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		km17P_Full_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Altera recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus II software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE10F17I7
+set_global_assignment -name TOP_LEVEL_ENTITY km17P_full
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 16.0.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "13:11:15  MARCH 23, 2017"
+set_global_assignment -name LAST_QUARTUS_VERSION 15.0.0
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP "-40"
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 100
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 256
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVCMOS"
+set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
+set_global_assignment -name CRC_ERROR_OPEN_DRAIN ON
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "NO HEAT SINK WITH STILL AIR"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name ENABLE_SIGNALTAP OFF
+set_global_assignment -name USE_SIGNALTAP_FILE syncro.stp
+set_global_assignment -name FORCE_CONFIGURATION_VCCIO OFF
+set_global_assignment -name RESERVE_DATA1_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_FLASH_NCE_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name TIMEQUEST_DO_REPORT_TIMING ON
+set_global_assignment -name TIMEQUEST_DO_CCPP_REMOVAL ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT FAST
+set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS ON
+set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
+set_global_assignment -name ENABLE_OCT_DONE OFF
+set_global_assignment -name FLOW_ENABLE_POWER_ANALYZER ON
+set_global_assignment -name POWER_DEFAULT_INPUT_IO_TOGGLE_RATE "12.5 %"
+set_global_assignment -name ENABLE_CONFIGURATION_PINS OFF
+set_global_assignment -name ENABLE_BOOT_SEL_PIN OFF
+set_global_assignment -name CRC_ERROR_CHECKING ON
+set_location_assignment PIN_B5 -to ADDR[8]
+set_location_assignment PIN_B4 -to ADDR[7]
+set_location_assignment PIN_B3 -to ADDR[6]
+set_location_assignment PIN_A8 -to ADDR[5]
+set_location_assignment PIN_A7 -to ADDR[4]
+set_location_assignment PIN_A6 -to ADDR[3]
+set_location_assignment PIN_A4 -to ADDR[2]
+set_location_assignment PIN_A3 -to ADDR[1]
+set_location_assignment PIN_A2 -to ADDR[0]
+set_location_assignment PIN_M16 -to GNDi
+set_location_assignment PIN_M1 -to LB_RD
+set_location_assignment PIN_M2 -to LB_WR
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to GNDi
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to LB_RD
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to LB_WR
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LB_WR
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LB_RD
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GNDi
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to ADDR[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to ADDR[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to ADDR[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to ADDR[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to ADDR[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to ADDR[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to ADDR[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to ADDR[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to ADDR[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ADDR[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ADDR[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ADDR[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ADDR[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ADDR[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ADDR[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ADDR[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ADDR[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ADDR[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to MASTER
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to MASTER
+set_location_assignment PIN_K16 -to MASTER
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to Musor
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to Musor
+set_instance_assignment -name SLEW_RATE 2 -to Musor
+set_location_assignment PIN_F3 -to Musor
+set_global_assignment -name DEVICE_FILTER_PACKAGE FBGA
+set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 7
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ADDR[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to F16M_P
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to INT_PUB
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LBDX[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LBDX[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LBDX[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LBDX[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LBDX[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LBDX[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LBDX[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to LBDX[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to OPMP_DE
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to OPMP_DI
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to OPMP_RO
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to P_SW1
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to P_SW2
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PLD_TO_PUB[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PLD_TO_PUB[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PLD_TO_PUB[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PLD_TO_PUB[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PLD_TO_PUB[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PLD_TO_PUB[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PLD_TO_PUB[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PLD_TO_PUB[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PLD_TO_PUB[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PORESET
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_GREEN
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_RED
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_TO_PLD[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_TO_PLD[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_TO_PLD[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_TO_PLD[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_TO_PLD[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_TO_PLD[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_TO_PLD[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_TO_PLD[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_TO_PLD[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to SPEC_TST1
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to SPEC_TST3
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to STB_FRM
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to OPMP_DI
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to OPMP_RO
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to P_SW1
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to P_SW2
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PLD_TO_PUB[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PLD_TO_PUB[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PLD_TO_PUB[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PLD_TO_PUB[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PLD_TO_PUB[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PLD_TO_PUB[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PLD_TO_PUB[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PLD_TO_PUB[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PLD_TO_PUB[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PORESET
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_GREEN
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_RED
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_TO_PLD[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_TO_PLD[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_TO_PLD[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_TO_PLD[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_TO_PLD[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_TO_PLD[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_TO_PLD[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_TO_PLD[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_TO_PLD[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to SPEC_TST1
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to SPEC_TST3
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to STB_FRM
+set_instance_assignment -name SLEW_RATE 2 -to INT_PUB
+set_instance_assignment -name SLEW_RATE 2 -to OPMP_DE
+set_instance_assignment -name SLEW_RATE 2 -to OPMP_DI
+set_instance_assignment -name SLEW_RATE 2 -to PUB_GREEN
+set_instance_assignment -name SLEW_RATE 2 -to PUB_RED
+set_instance_assignment -name SLEW_RATE 2 -to PUB_TO_PLD[9]
+set_instance_assignment -name SLEW_RATE 2 -to PUB_TO_PLD[8]
+set_instance_assignment -name SLEW_RATE 2 -to PUB_TO_PLD[7]
+set_instance_assignment -name SLEW_RATE 2 -to PUB_TO_PLD[6]
+set_instance_assignment -name SLEW_RATE 2 -to PUB_TO_PLD[5]
+set_instance_assignment -name SLEW_RATE 2 -to PUB_TO_PLD[4]
+set_instance_assignment -name SLEW_RATE 2 -to PUB_TO_PLD[3]
+set_instance_assignment -name SLEW_RATE 2 -to PUB_TO_PLD[2]
+set_instance_assignment -name SLEW_RATE 2 -to PUB_TO_PLD[1]
+set_instance_assignment -name SLEW_RATE 2 -to SPEC_TST1
+set_instance_assignment -name SLEW_RATE 2 -to SPEC_TST3
+set_instance_assignment -name SLEW_RATE 2 -to LBDX[7]
+set_instance_assignment -name SLEW_RATE 2 -to LBDX[6]
+set_instance_assignment -name SLEW_RATE 2 -to LBDX[5]
+set_instance_assignment -name SLEW_RATE 2 -to LBDX[4]
+set_instance_assignment -name SLEW_RATE 2 -to LBDX[3]
+set_instance_assignment -name SLEW_RATE 2 -to LBDX[2]
+set_instance_assignment -name SLEW_RATE 2 -to LBDX[1]
+set_instance_assignment -name SLEW_RATE 2 -to LBDX[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to ADDR[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to F16M_P
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to INT_PUB
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to OPMP_DE
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to LBDX[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to LBDX[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to LBDX[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to LBDX[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to LBDX[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to LBDX[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to LBDX[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to LBDX[0]
+set_location_assignment PIN_T15 -to PUB_TO_PLD[1]
+set_location_assignment PIN_R13 -to PUB_TO_PLD[2]
+set_location_assignment PIN_N16 -to PUB_TO_PLD[3]
+set_location_assignment PIN_N13 -to PUB_TO_PLD[4]
+set_location_assignment PIN_L15 -to PUB_TO_PLD[5]
+set_location_assignment PIN_L16 -to PUB_TO_PLD[6]
+set_location_assignment PIN_P14 -to PUB_TO_PLD[7]
+set_location_assignment PIN_R14 -to PUB_TO_PLD[8]
+set_location_assignment PIN_T13 -to PUB_TO_PLD[9]
+set_location_assignment PIN_R16 -to OPMP_RO
+set_location_assignment PIN_C14 -to STB_FRM
+set_location_assignment PIN_T14 -to PLD_TO_PUB[1]
+set_location_assignment PIN_R11 -to PLD_TO_PUB[2]
+set_location_assignment PIN_P16 -to PLD_TO_PUB[3]
+set_location_assignment PIN_N15 -to PLD_TO_PUB[4]
+set_location_assignment PIN_N12 -to PLD_TO_PUB[5]
+set_location_assignment PIN_N14 -to PLD_TO_PUB[6]
+set_location_assignment PIN_P15 -to PLD_TO_PUB[7]
+set_location_assignment PIN_R10 -to PLD_TO_PUB[8]
+set_location_assignment PIN_T10 -to PLD_TO_PUB[9]
+set_location_assignment PIN_T11 -to OPMP_DI
+set_location_assignment PIN_T12 -to OPMP_DE
+set_location_assignment PIN_E1 -to F16M_P
+set_location_assignment PIN_E11 -to INT_PUB
+set_location_assignment PIN_A15 -to SPEC_TST1
+set_location_assignment PIN_B10 -to SPEC_TST3
+set_location_assignment PIN_B6 -to ADDR[9]
+set_location_assignment PIN_D3 -to PUB_RED
+set_location_assignment PIN_D6 -to PUB_GREEN
+set_location_assignment PIN_N1 -to PORESET
+set_location_assignment PIN_J16 -to UP_RX
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to UP_TX
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to TP_P
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to UP_RX
+set_location_assignment PIN_G16 -to UP_TX
+set_location_assignment PIN_D11 -to LBDX[0]
+set_location_assignment PIN_D12 -to LBDX[1]
+set_location_assignment PIN_D14 -to LBDX[2]
+set_location_assignment PIN_D9 -to LBDX[3]
+set_location_assignment PIN_E9 -to LBDX[4]
+set_location_assignment PIN_F10 -to LBDX[5]
+set_location_assignment PIN_F11 -to LBDX[6]
+set_location_assignment PIN_F9 -to LBDX[7]
+set_location_assignment PIN_K5 -to BDX_P[0]
+set_location_assignment PIN_L4 -to BDX_P[1]
+set_location_assignment PIN_J2 -to XF_P
+set_location_assignment PIN_K8 -to CS_PLD_P
+set_location_assignment PIN_F1 -to BDR_P[0]
+set_location_assignment PIN_M12 -to BDR_P[1]
+set_location_assignment PIN_D4 -to BFS_P
+set_location_assignment PIN_J12 -to BCLK_P
+set_location_assignment PIN_J13 -to INT_0P
+set_location_assignment PIN_F15 -to PUB_F15
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to BFS_P
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to BDR_P[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_F15
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to XF_P
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to BCLK_P
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to INT_0P
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to PUB_J16
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to BDX_P[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to CS_PLD_P
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to BDX_P[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to BDR_P[1]
+set_instance_assignment -name SLEW_RATE 2 -to BFS_P
+set_instance_assignment -name SLEW_RATE 2 -to BCLK_P
+set_instance_assignment -name SLEW_RATE 2 -to TP_P
+set_instance_assignment -name SLEW_RATE 2 -to UP_TX
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to BDR_P[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_F15
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to INT_0P
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to PUB_J16
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to BDX_P[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to CS_PLD_P
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to BDX_P[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to BDR_P[1]
+set_instance_assignment -name SLEW_RATE 2 -to BDR_P[0]
+set_instance_assignment -name SLEW_RATE 2 -to BDR_P[1]
+set_instance_assignment -name SLEW_RATE 2 -to INT_0P
+set_instance_assignment -name SLEW_RATE 2 -to PUB_J16
+set_instance_assignment -name SLEW_RATE 2 -to PUB_F15
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to BCLK_P
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to BFS_P
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to XF_P
+set_global_assignment -name OPTIMIZE_HOLD_TIMING "ALL PATHS"
+set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
+set_global_assignment -name OPTIMIZE_POWER_DURING_FITTING OFF
+set_global_assignment -name GENERATE_RBF_FILE ON
+set_global_assignment -name SEARCH_PATH km_170_pld_b
+set_global_assignment -name SEARCH_PATH km_170_pld_b\\jjhdlc
+set_global_assignment -name SEARCH_PATH km_170_pld_c\\jjhdlc
+set_global_assignment -name SEARCH_PATH km_170_pld_a\\jjhdlc
+set_global_assignment -name SEARCH_PATH km_170_pld_c
+set_global_assignment -name SEARCH_PATH km_170_pld_a
+set_global_assignment -name SEARCH_PATH myhdlc
+set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
+set_global_assignment -name CYCLONEIII_CONFIGURATION_SCHEME "PASSIVE SERIAL"
+set_global_assignment -name AHDL_FILE km_170_pld_c/main_km_170_pld_c.tdf
+set_global_assignment -name AHDL_FILE KM_170_PLD_A/main_km_170_pld_a.tdf
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

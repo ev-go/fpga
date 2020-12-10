@@ -1,0 +1,93 @@
+SUBDESIGN		tx_opm_to_pld
+(
+	f_32m
+,	bit_cnt[11..0]
+,	data_tx[3..0][24..0]
+,	data_h_tx[3..0][4..0]
+				: INPUT ;
+
+	en_rdy_d_tx
+,	num_slot_tx[4..0]
+,	d_to_pld[3..0]
+				: OUTPUT ;
+)
+
+VARIABLE
+
+	en_8m					: DFF ;
+	cnt_tx_opm[9..0]		: NODE ;
+	cnt_bit_req[4..0]		: DFFE ;
+	cnt_slot_req[5..0]		: DFFE ;
+	num_slot_tx[4..0]		: DFFE ;
+	cnt_bit_tx[4..0]		: DFFE ;
+	cnt_slot_tx[5..0]		: DFFE ;
+	sync_word[7..0]			: NODE ;
+	shift_o[3..0][24..0]	: DFFE ;
+
+BEGIN
+
+	en_8m.clk = f_32m ;
+	en_8m = ( bit_cnt[1..0] == 2 ) ;
+
+	cnt_tx_opm[9..0] = ( bit_cnt[11..2] + 26 ) ;
+
+-- Запрос выходных данных
+	cnt_bit_req[4..0].clk = f_32m ;
+	cnt_slot_req[5..0].clk = f_32m ;
+	cnt_bit_req[4..0].ena = en_8m ;
+	cnt_slot_req[5..0].ena = en_8m ;
+	IF ( cnt_tx_opm[9..0] == -9 ) THEN
+		cnt_bit_req[4..0] = 0 ;
+		cnt_slot_req[5..0] = 0 ;
+	ELSIF ( cnt_bit_req[4..0] >= 29 ) THEN
+		cnt_bit_req[4..0] = 0 ;
+		cnt_slot_req[5..0] = ( cnt_slot_req[5..0] + 1 ) ;
+	ELSE
+		cnt_bit_req[4..0] = ( cnt_bit_req[4..0] + 1 ) ;
+		cnt_slot_req[5..0] = cnt_slot_req[5..0] ;
+	END IF ;
+
+	en_rdy_d_tx = ( (cnt_bit_req[4..0] == 0) & (cnt_slot_req[5..0] <= 31) & en_8m ) ;
+
+	num_slot_tx[4..0].clk = f_32m ;
+	num_slot_tx[4..0].ena = en_rdy_d_tx ;
+	num_slot_tx[4..0] = cnt_slot_req[4..0] ;
+
+-- Выходные счетчики
+	cnt_bit_tx[4..0].clk = f_32m ;
+	cnt_slot_tx[5..0].clk = f_32m ;
+	cnt_bit_tx[4..0].ena = en_8m ;
+	cnt_slot_tx[5..0].ena = en_8m ;
+	IF ( cnt_tx_opm[9..0] == -1 ) THEN
+		cnt_bit_tx[4..0] = 0 ;
+		cnt_slot_tx[5..0] = 0 ;
+	ELSIF ( cnt_bit_tx[4..0] >= 29 ) THEN
+		cnt_bit_tx[4..0] = 0 ;
+		cnt_slot_tx[5..0] = ( cnt_slot_tx[5..0] + 1 ) ;
+	ELSE
+		cnt_bit_tx[4..0] = ( cnt_bit_tx[4..0] + 1 ) ;
+		cnt_slot_tx[5..0] = cnt_slot_tx[5..0] ;
+	END IF ;
+
+-- Выходные потоки
+	sync_word[7..0] = B"11011001" ;
+
+	FOR i IN 0 TO 3 GENERATE
+		shift_o[i][24..0].clk = f_32m ;
+		shift_o[i][24..0].ena = en_8m ;
+		IF ( cnt_tx_opm[9..0] == -8 ) THEN
+			shift_o[i][24..17] = sync_word[7..0] ;
+			shift_o[i][16..0] = VCC ;
+		ELSIF ( (cnt_bit_tx[4..0] == 0) & (cnt_slot_tx[5..0] <= 31) ) THEN
+			shift_o[i][24..0] = data_tx[i][24..0] ;
+		ELSIF ( (cnt_bit_tx[4..0] == 25) & (cnt_slot_tx[5..0] <= 31) ) THEN
+			shift_o[i][24..20] = data_h_tx[i][4..0] ;
+			shift_o[i][19..0] = VCC ;
+		ELSE
+			shift_o[i][24..0] = ( shift_o[i][23..0] , 1 ) ;
+		END IF ;
+
+		d_to_pld[i] = shift_o[i][24] ;
+	END GENERATE ;
+
+END ;

@@ -1,0 +1,82 @@
+SUBDESIGN		tx_to_dsp
+(
+	d_from_a
+,	d_from_b
+,	bit_cnt[11..0]
+,	f_32m
+				: INPUT ;
+
+	d_to_dsp
+,	err_flag
+,	num_ki_err[6..0]
+,	err_fl_rdy
+				: OUTPUT ;
+)
+
+VARIABLE
+
+	cnt_tx[11..0]			: NODE ;
+	d_rx_a					: DFF ;
+	d_rx_b					: DFF ;
+	shift_rx_a[24..0]		: DFF ;
+	shift_rx_b[24..0]		: DFF ;
+	data_compared[24..0]	: NODE ;
+	shift_dsp_o[24..0]		: DFF ;
+	en_err_fl				: NODE ;
+	err_d					: NODE ;
+	err_flag				: DFFE ;
+	num_ki_err[6..0]		: DFFE ;
+	err_fl_rdy				: DFF ;
+
+BEGIN
+
+-- ��������
+	cnt_tx[11..0] = ( bit_cnt[11..0] + 1 ) ;
+
+-- ����� �� ����
+	d_rx_a.clk = !f_32m ;
+	d_rx_b.clk = !f_32m ;
+	d_rx_a = d_from_a ;
+	d_rx_b = d_from_b ;
+
+	shift_rx_a[24..0].clk = f_32m ;
+	shift_rx_b[24..0].clk = f_32m ;
+	shift_rx_a[24..0] = ( shift_rx_a[23..0] , d_rx_a ) ;
+	shift_rx_b[24..0] = ( shift_rx_b[23..0] , d_rx_b ) ;
+
+	IF ( shift_rx_a[24..0] == shift_rx_b[24..0] ) THEN
+		data_compared[24..0] = shift_rx_a[24..0] ;
+		err_d = GND ;
+	ELSE
+	---	data_compared[24..0] = VCC ;
+		data_compared[24..9] = H"FFFF" ;
+			data_compared[8..1] = H"DB" ;
+			data_compared[0] = VCC ;
+		err_d = VCC ;
+	END IF ;
+
+-- ������ �� DSP
+	shift_dsp_o[24..0].clk = f_32m ;
+	IF ( cnt_tx[4..0] == 0 ) THEN
+		shift_dsp_o[24..0] = data_compared[24..0] ;
+	ELSE
+		shift_dsp_o[24..0] = ( shift_dsp_o[23..0] , 1 ) ;
+	END IF ;
+
+	d_to_dsp = shift_dsp_o[24] ;
+
+-- ����� ������ ���������
+	en_err_fl = ( cnt_tx[4..0] == 0 ) ;
+
+	err_flag.clk = f_32m ;
+	err_flag.ena = en_err_fl ;
+	err_flag = err_d ;
+
+	num_ki_err[6..0].clk = f_32m ;
+	num_ki_err[6..0].ena = en_err_fl ;
+	num_ki_err[6..0] = cnt_tx[11..5] ;
+
+	err_fl_rdy.clk = f_32m ;
+	err_fl_rdy = en_err_fl ;
+
+END ;

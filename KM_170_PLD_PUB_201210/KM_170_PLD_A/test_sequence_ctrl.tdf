@@ -1,0 +1,274 @@
+INCLUDE			"lpm_mux.inc" ;
+INCLUDE			"constants_256_00.inc" ;
+
+SUBDESIGN		test_sequence_ctrl
+(
+	f_32m
+,	last_bit
+,	uid_const[11..0]
+,	uid_ff[11..0]
+,	cmd_do_test
+,	sync_cnt_uid
+,	pre_a_rd_const[7..0]
+,	d_const_ff_i[24..0]
+,	num_ki_const_i[7..0]
+,	en_const_i
+,	en_ff_i
+				: INPUT ;
+
+	test_is_on
+,	d_ki_const[24..0]
+,	d_ki_ff[24..0]
+,	t_step_ok[7..0]
+,	cnt_of_tests[3..0]
+				: OUTPUT ;
+)
+
+VARIABLE
+
+	rx_cmd					: DFF ;
+	test_is_on				: DFF ;
+	rx_sync					: DFF ;
+	cnt_uid_cycle[4..0]		: DFFE ;
+	last_cycle_uid			: NODE ;
+	test_step[2..0]			: DFFE ;
+	num_cycle_gen[7..0]		: DFFE ;
+	en_check_det			: NODE ;
+	finish_test				: NODE ;
+	mux_uid					: lpm_mux WITH ( LPM_WIDTH = 2, LPM_SIZE = 21, LPM_WIDTHS = 5 ) ;
+	d_uid_const				: NODE ;
+	d_uid_ff				: NODE ;
+	m_tx_constants			: constants_256_00 ;
+	test_const[15..0]		: DFF ;
+	d_gen_const[15..0]		: NODE ;
+	d_gen_ff[15..0]			: NODE ;
+	crc_const[7..0]			: NODE ;
+	crc_ff[7..0]			: NODE ;
+	d_ki_const[24..0]		: NODE ;
+	d_ki_ff[24..0]			: NODE ;
+	m_rx_constants			: constants_256_00 ;
+	const_must_rx[15..0]	: NODE ;
+	d_const_must[15..0]		: NODE ;
+	d_ff_must[15..0]		: NODE ;
+	cnt_const_i[1..0]		: DFF ;
+	cnt_ff_i[1..0]			: DFF ;
+	t_step_ok[7..0]			: DFF ;
+	cnt_of_tests[3..0]		: DFFE ;
+
+BEGIN
+
+-- ������� �� ������ �����
+	rx_cmd.clk = !f_32m ;
+	rx_cmd = cmd_do_test ;
+
+	test_is_on.clk = f_32m ;
+	IF ( !test_is_on ) THEN
+		test_is_on = rx_cmd ;
+	ELSE
+		test_is_on = !( finish_test & last_bit ) ;
+	END IF ;
+
+-- ������� ����� ���
+	rx_sync.clk = !f_32m ;
+	rx_sync = sync_cnt_uid ;
+
+	cnt_uid_cycle[4..0].clk = f_32m ;
+	cnt_uid_cycle[4..0].ena = last_bit ;
+	IF ( rx_sync # last_cycle_uid ) THEN
+		cnt_uid_cycle[4..0] = 0 ;
+	ELSE
+		cnt_uid_cycle[4..0] = ( cnt_uid_cycle[4..0] + 1 ) ;
+	END IF ;
+
+	last_cycle_uid = ( cnt_uid_cycle[4..0] >= 20 ) ;
+
+-- ���������� �����
+	test_step[2..0].clk = f_32m ;
+	num_cycle_gen[7..0].clk = f_32m ;
+	test_step[2..0].ena = last_bit ;
+	num_cycle_gen[7..0].ena = last_bit ;
+	CASE ( test_step[2..0] ) IS
+		WHEN 0 =>
+			IF ( test_is_on ) THEN
+				test_step[2..0] = 1 ;
+			ELSE
+				test_step[2..0] = 0 ;
+			END IF ;
+			num_cycle_gen[7..0] = 0 ;
+			en_check_det = GND ;
+			finish_test = GND ;
+		WHEN 1 =>
+			IF ( !last_cycle_uid ) THEN
+				test_step[2..0] = test_step[2..0] ;
+				num_cycle_gen[7..0] = num_cycle_gen[7..0] ;
+			ELSIF ( num_cycle_gen[7..0] < 4 ) THEN
+				test_step[2..0] = test_step[2..0] ;
+				num_cycle_gen[7..0] = ( num_cycle_gen[7..0] + 1 ) ;
+			ELSE
+				test_step[2..0] = 2 ;
+				num_cycle_gen[7..0] = 0 ;
+			END IF ;
+			en_check_det = GND ;
+			finish_test = GND ;
+		WHEN 2 , 3 , 4 =>
+			IF ( num_cycle_gen[7..0] < 127 ) THEN
+				test_step[2..0] = test_step[2..0] ;
+				num_cycle_gen[7..0] = ( num_cycle_gen[7..0] + 1 ) ;
+				en_check_det = GND ;
+			ELSE
+				test_step[2..0] = ( test_step[2..0] + 1 ) ;
+				num_cycle_gen[7..0] = 0 ;
+				en_check_det = VCC ;
+			END IF ;
+			finish_test = GND ;
+		WHEN 5 =>
+			IF ( num_cycle_gen[7..0] < 127 ) THEN
+				test_step[2..0] = test_step[2..0] ;
+				num_cycle_gen[7..0] = ( num_cycle_gen[7..0] + 1 ) ;
+				en_check_det = GND ;
+				finish_test = GND ;
+			ELSE
+				test_step[2..0] = 0 ;
+				num_cycle_gen[7..0] = 0 ;
+				en_check_det = VCC ;
+				finish_test = VCC ;
+			END IF ;
+		WHEN OTHERS =>
+			test_step[2..0] = 0 ;
+			num_cycle_gen[7..0] = 0 ;
+			en_check_det = GND ;
+			finish_test = GND ;
+	END CASE ;
+
+-- ������������ ����� ���
+	mux_uid.data[0][1..0] = GND ;
+	FOR i IN 1 TO 12 GENERATE
+		mux_uid.data[i][0] = uid_const[12 - i] ;
+		mux_uid.data[i][1] = uid_ff[12 - i] ;
+	END GENERATE ;
+	mux_uid.data[20..13][1..0] = VCC ;
+	mux_uid.sel[4..0] = cnt_uid_cycle[4..0] ;
+
+	d_uid_const = mux_uid.result[0] ;
+	d_uid_ff = mux_uid.result[1] ;
+
+-- ������������ �������� ������
+	m_tx_constants.adr_const[7..0] = pre_a_rd_const[7..0] ;
+
+	test_const[15..0].clk = f_32m ;
+	test_const[15..0] = m_tx_constants.const_value[15..0] ;
+
+	CASE ( test_step[2..0] ) IS
+		WHEN 2 =>
+			d_gen_const[15..0] = test_const[15..0] ;
+			d_gen_ff[15..0] = H"FFFF" ;
+		WHEN 3 =>
+			d_gen_const[15..0] = !test_const[15..0] ;
+			d_gen_ff[15..0] = H"FFFF" ;
+		WHEN 4 =>
+			d_gen_const[15..0] = test_const[15..0] ;
+			d_gen_ff[15..0] = H"0000" ;
+		WHEN 5 =>
+			d_gen_const[15..0] = !test_const[15..0] ;
+			d_gen_ff[15..0] = H"0000" ;
+		WHEN OTHERS =>
+			d_gen_const[15..0] = H"FFFF" ;
+			d_gen_ff[15..0] = H"FFFF" ;
+	END CASE ;
+
+-- CRC
+	crc_const[0] = !( d_gen_const[14] XOR d_gen_const[12] XOR d_gen_const[8]  XOR d_gen_const[7]  XOR d_gen_const[6] XOR d_gen_const[0] ) ;
+	crc_const[1] = !( d_gen_const[15] XOR d_gen_const[14] XOR d_gen_const[13] XOR d_gen_const[12] XOR d_gen_const[9] XOR d_gen_const[6] XOR d_gen_const[1] XOR d_gen_const[0] ) ;
+	crc_const[2] = !( d_gen_const[15] XOR d_gen_const[13] XOR d_gen_const[12] XOR d_gen_const[10] XOR d_gen_const[8] XOR d_gen_const[6] XOR d_gen_const[2] XOR d_gen_const[1] XOR
+					d_gen_const[0] ) ;
+	crc_const[3] = !( d_gen_const[14] XOR d_gen_const[13] XOR d_gen_const[11] XOR d_gen_const[9]  XOR d_gen_const[7] XOR d_gen_const[3] XOR d_gen_const[2] XOR d_gen_const[1] ) ;
+	crc_const[4] = !( d_gen_const[15] XOR d_gen_const[14] XOR d_gen_const[12] XOR d_gen_const[10] XOR d_gen_const[8] XOR d_gen_const[4] XOR d_gen_const[3] XOR d_gen_const[2] ) ;
+	crc_const[5] = !( d_gen_const[15] XOR d_gen_const[13] XOR d_gen_const[11] XOR d_gen_const[9]  XOR d_gen_const[5] XOR d_gen_const[4] XOR d_gen_const[3] ) ;
+	crc_const[6] = !( d_gen_const[14] XOR d_gen_const[12] XOR d_gen_const[10] XOR d_gen_const[6]  XOR d_gen_const[5] XOR d_gen_const[4] ) ;
+	crc_const[7] = !( d_gen_const[15] XOR d_gen_const[13] XOR d_gen_const[11] XOR d_gen_const[7]  XOR d_gen_const[6] XOR d_gen_const[5] ) ;
+
+	crc_ff[0] = !( d_gen_ff[14] XOR d_gen_ff[12] XOR d_gen_ff[8]  XOR d_gen_ff[7]  XOR d_gen_ff[6] XOR d_gen_ff[0] ) ;
+	crc_ff[1] = !( d_gen_ff[15] XOR d_gen_ff[14] XOR d_gen_ff[13] XOR d_gen_ff[12] XOR d_gen_ff[9] XOR d_gen_ff[6] XOR d_gen_ff[1] XOR d_gen_ff[0] ) ;
+	crc_ff[2] = !( d_gen_ff[15] XOR d_gen_ff[13] XOR d_gen_ff[12] XOR d_gen_ff[10] XOR d_gen_ff[8] XOR d_gen_ff[6] XOR d_gen_ff[2] XOR d_gen_ff[1] XOR d_gen_ff[0] ) ;
+	crc_ff[3] = !( d_gen_ff[14] XOR d_gen_ff[13] XOR d_gen_ff[11] XOR d_gen_ff[9]  XOR d_gen_ff[7] XOR d_gen_ff[3] XOR d_gen_ff[2] XOR d_gen_ff[1] ) ;
+	crc_ff[4] = !( d_gen_ff[15] XOR d_gen_ff[14] XOR d_gen_ff[12] XOR d_gen_ff[10] XOR d_gen_ff[8] XOR d_gen_ff[4] XOR d_gen_ff[3] XOR d_gen_ff[2] ) ;
+	crc_ff[5] = !( d_gen_ff[15] XOR d_gen_ff[13] XOR d_gen_ff[11] XOR d_gen_ff[9]  XOR d_gen_ff[5] XOR d_gen_ff[4] XOR d_gen_ff[3] ) ;
+	crc_ff[6] = !( d_gen_ff[14] XOR d_gen_ff[12] XOR d_gen_ff[10] XOR d_gen_ff[6]  XOR d_gen_ff[5] XOR d_gen_ff[4] ) ;
+	crc_ff[7] = !( d_gen_ff[15] XOR d_gen_ff[13] XOR d_gen_ff[11] XOR d_gen_ff[7]  XOR d_gen_ff[6] XOR d_gen_ff[5] ) ;
+
+-- �������� ������
+	d_ki_const[24..0] = ( d_gen_const[15..0] , crc_const[7..0] , d_uid_const ) ;
+
+	d_ki_ff[24..0] = ( d_gen_ff[15..0] , crc_ff[7..0] , d_uid_ff ) ;
+
+-- �������� ��������
+	m_rx_constants.adr_const[7..0] = num_ki_const_i[7..0] ;
+
+	const_must_rx[15..0] = m_rx_constants.const_value[15..0] ;
+
+	CASE ( test_step[2..0] ) IS
+		WHEN 2 =>
+			d_const_must[15..0] = const_must_rx[15..0] ;
+			d_ff_must[15..0] = H"FFFF" ;
+		WHEN 3 =>
+			d_const_must[15..0] = !const_must_rx[15..0] ;
+			d_ff_must[15..0] = H"FFFF" ;
+		WHEN 4 =>
+			d_const_must[15..0] = const_must_rx[15..0] ;
+			d_ff_must[15..0] = H"0000" ;
+		WHEN 5 =>
+			d_const_must[15..0] = !const_must_rx[15..0] ;
+			d_ff_must[15..0] = H"0000" ;
+		WHEN OTHERS =>
+			d_const_must[15..0] = H"FFFF" ;
+			d_ff_must[15..0] = H"FFFF" ;
+	END CASE ;
+
+	cnt_const_i[1..0].clk = f_32m ;
+	IF ( last_bit & (test_step[2..0] < 2) ) THEN
+		cnt_const_i[1..0] = 0 ;
+	ELSIF ( en_const_i ) THEN
+		IF ( d_const_ff_i[24..9] == d_const_must[15..0] ) THEN
+			cnt_const_i[1..0] = ( (cnt_const_i[1..0] + 1) # (cnt_const_i[1..0] == VCC) ) ;
+		ELSE
+			cnt_const_i[1..0] = 0 ;
+		END IF ;
+	ELSE
+		cnt_const_i[1..0] = cnt_const_i[1..0] ;
+	END IF ;
+
+	cnt_ff_i[1..0].clk = f_32m ;
+	IF ( last_bit & (test_step[2..0] < 2) ) THEN
+		cnt_ff_i[1..0] = 0 ;
+	ELSIF ( en_ff_i ) THEN
+		IF ( d_const_ff_i[24..9] == d_ff_must[15..0] ) THEN
+			cnt_ff_i[1..0] = ( (cnt_ff_i[1..0] + 1) # (cnt_ff_i[1..0] == VCC) ) ;
+		ELSE
+			cnt_ff_i[1..0] = 0 ;
+		END IF ;
+	ELSE
+		cnt_ff_i[1..0] = cnt_ff_i[1..0] ;
+	END IF ;
+
+	FOR i IN 0 TO 3 GENERATE
+		t_step_ok[i].clk = f_32m ;
+		t_step_ok[i+4].clk = f_32m ;
+		IF ( rx_cmd ) THEN
+			t_step_ok[i] = GND ; t_step_ok[i+4] = GND ;
+		ELSIF ( (test_step[2..0] == (i + 2)) & en_check_det & last_bit ) THEN
+---			t_step_ok[i] = ( (cnt_const_i[1..0] == 3) & (cnt_ff_i[1..0] == 3) ) ;
+	t_step_ok[i] =  (cnt_const_i[1..0] == 3) ; t_step_ok[i+4] = (cnt_ff_i[1..0] == 3)  ;
+		ELSE
+			t_step_ok[i] = t_step_ok[i] ;t_step_ok[i+4] = t_step_ok[i+4] ;
+		END IF ;
+
+
+		
+		
+	END GENERATE ;
+
+	cnt_of_tests[3..0].clk = f_32m ;
+	cnt_of_tests[3..0].ena = ( (test_step[2..0] == 4) & en_check_det & last_bit ) ;
+	cnt_of_tests[3..0] = ( cnt_of_tests[3..0] + 1 ) ;
+
+END ;

@@ -1,0 +1,67 @@
+Quartus II Archive log --	C:/Logic/km170/201103/KM_170_PLD_PUB/km17_Public_tmp_archive.qarlog
+
+Archive:	C:/Logic/km170/201103/KM_170_PLD_PUB/km17_Public_tmp_archive.qar
+Date:		Thu Dec 10 21:10:58 2020
+Quartus II 64-Bit		15.0.0 Build 145 04/22/2015 SJ Web Edition
+
+	=========== Files Selected: ===========
+C:/Logic/km170/201103/KM_170_PLD_PUB/KM_170_PLD_A/main_km_170_pld_a.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/PLLJ_PLLSPE_INFO.txt
+C:/Logic/km170/201103/KM_170_PLD_PUB/__km17P_wrk.auto.qarlog
+C:/Logic/km170/201103/KM_170_PLD_PUB/assignment_defaults.qdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km17P_Full.qsf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km17P_Full_assignment_defaults.qdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km17P_full.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km17P_wrk.flow.rpt
+C:/Logic/km170/201103/KM_170_PLD_PUB/km17P_wrk.map.rpt
+C:/Logic/km170/201103/KM_170_PLD_PUB/km17P_wrk.map.summary
+C:/Logic/km170/201103/KM_170_PLD_PUB/km17P_wrk.qsf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km17_Public.qpf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km17_Public_tmp_archive.qarlog
+C:/Logic/km170/201103/KM_170_PLD_PUB/km17p_full.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/buf_dsp.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/buf_dsp.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/buf_mpu.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/buf_mpu.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/buf_opm.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/buf_opm.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/commutator.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/commutator.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/constants_256_00.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/constants_256_00.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/jumper.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/jumper.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/main_km_170_pld_a.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/mem_sw.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/mem_sw.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/mem_sw_init.mif
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/rx_from_dsp.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/rx_from_dsp.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/rx_from_mpu.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/rx_from_mpu.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/rx_from_opm.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/rx_from_opm.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/test_sequence_ctrl.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/test_sequence_ctrl.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/tx_dsp_to_pld.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/tx_dsp_to_pld.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/tx_mpu_to_pld.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/tx_mpu_to_pld.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/tx_opm_to_pld.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_a/tx_opm_to_pld.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/calc_comm_errors.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/calc_comm_errors.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/main_km_170_pld_c.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/main_km_170_pld_c.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/mem_comm_errors.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/mem_comm_errors.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/pll_32m_x4.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/pll_32m_x4.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/tx_to_dsp.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/tx_to_dsp.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/tx_to_mpu.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/tx_to_mpu.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/tx_to_opm.inc
+C:/Logic/km170/201103/KM_170_PLD_PUB/km_170_pld_c/tx_to_opm.tdf
+	======= Total: 58 files to archive =======
+

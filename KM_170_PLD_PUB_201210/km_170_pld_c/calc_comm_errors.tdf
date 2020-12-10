@@ -1,0 +1,231 @@
+INCLUDE			"lpm_mux.inc" ;
+INCLUDE			"mem_comm_errors.inc" ;
+
+SUBDESIGN		calc_comm_errors
+(
+	cpu_a[5..0]
+,	cpu_wr
+,	err_cs
+,	opm_err_flags[3..0]
+,	opm_num_ki[4..0]
+,	opm_rdy
+,	mpu_err_flags[8..0]
+,	mpu_num_ki
+,	mpu_rdy
+,	dsp_err_flag
+,	dsp_num_ki[6..0]
+,	dsp_rdy
+,	en_fix_errs
+,	gclk
+				: INPUT ;
+
+	cpu_d_err_o[7..0]
+				: OUTPUT ;
+)
+
+VARIABLE
+
+	det_ch_rdy[2..0][1..0]	: DFF ;
+	en_ch_rdy[2..0]			: NODE ;
+	ch_ready[2..0]			: DFF ;
+	chan[1..0]				: DFF ;
+	ch_cnt[4..0]			: DFF ;
+	end_of_ch[2..0]			: NODE ;
+	wren_fl					: NODE ;
+	tek_rdy					: NODE ;
+	tek_end_of_ch			: NODE ;
+	adr_wr_fl[8..0]			: NODE ;
+	d_fl_err				: NODE ;
+	adr_fl_opm[6..0]		: NODE ;
+	adr_fl_mpu[4..0]		: NODE ;
+	adr_fl_dsp[6..0]		: NODE ;
+	mux_err_opm				: lpm_mux WITH ( LPM_WIDTH = 1, LPM_SIZE = 4, LPM_WIDTHS = 2 ) ;
+	d_fl_opm				: NODE ;
+	mux_err_mpu				: lpm_mux WITH ( LPM_WIDTH = 1, LPM_SIZE = 9, LPM_WIDTHS = 4 ) ;
+	d_fl_mpu				: NODE ;
+	m_mem_err				: mem_comm_errors ;
+	d_from_mem_err			: NODE ;
+	d_to_mem_err			: NODE ;
+	last_fl_opm[6..0]		: DFFE ;
+	last_fl_mpu[4..0]		: DFFE ;
+	last_fl_dsp[6..0]		: DFFE ;
+	det_exch_page[1..0]		: DFF ;
+	en_exch_page			: NODE ;
+	page_rd_mem				: DFFE ;
+	fix_num_clr_fl			: DFF ;
+	num_clr_fl_opm[6..0]	: DFFE ;
+	num_clr_fl_mpu[4..0]	: DFFE ;
+	num_clr_fl_dsp[6..0]	: DFFE ;
+	clear_fl_opm			: DFF ;
+	clear_fl_mpu			: DFF ;
+	clear_fl_dsp			: DFF ;
+	clear_fl_err			: NODE ;
+
+BEGIN
+
+-- Готовности флагов ошибок
+	det_ch_rdy[2..0][1..0].clk = gclk ;
+	det_ch_rdy[0][1..0] = ( det_ch_rdy[0][0] , opm_rdy ) ;
+	det_ch_rdy[1][1..0] = ( det_ch_rdy[1][0] , mpu_rdy ) ;
+	det_ch_rdy[2][1..0] = ( det_ch_rdy[2][0] , dsp_rdy ) ;
+
+	FOR i IN 0 TO 2 GENERATE
+		en_ch_rdy[i] = ( !det_ch_rdy[i][0] & det_ch_rdy[i][1] ) ;
+	END GENERATE ;
+
+	FOR i IN 0 TO 2 GENERATE
+		ch_ready[i].clk = gclk ;
+		IF ( en_ch_rdy[i] ) THEN
+			ch_ready[i] = VCC ;
+		ELSIF ( (chan[1..0] == i) & end_of_ch[i] ) THEN
+			ch_ready[i] = GND ;
+		ELSE
+			ch_ready[i] = ch_ready[i] ;
+		END IF ;
+	END GENERATE ;
+
+-- Перебор флагов
+	chan[1..0].clk = gclk ;
+	ch_cnt[4..0].clk = gclk ;
+	IF ( !tek_rdy # tek_end_of_ch ) THEN
+		chan[1..0] = ( (chan[1..0] + 1) & (chan[1..0] < 2) ) ;
+		ch_cnt[4..0] = 0 ;
+	ELSE
+		chan[1..0] = chan[1..0] ;
+		ch_cnt[4..0] = ( ch_cnt[4..0] + 1 ) ;
+	END IF ;
+
+	end_of_ch[0] = ( (ch_cnt[4..1] == 3) & ch_cnt[0] ) ;
+	end_of_ch[1] = ( (ch_cnt[4..1] == 8) & ch_cnt[0] ) ;
+	end_of_ch[2] = ( (ch_cnt[4..1] == 0) & ch_cnt[0] ) ;
+
+	wren_fl = ch_cnt[0] ;
+
+	CASE ( chan[1..0] ) IS
+		WHEN 0 =>
+			tek_rdy = ch_ready[0] ;
+			tek_end_of_ch = end_of_ch[0] ;
+			adr_wr_fl[8..0] = ( B"00" , adr_fl_opm[6..0] ) ;
+			d_fl_err = d_fl_opm ;
+		WHEN 1 =>
+			tek_rdy = ch_ready[1] ;
+			tek_end_of_ch = end_of_ch[1] ;
+			adr_wr_fl[8..0] = ( B"01" , B"01" , adr_fl_mpu[4..0] ) ;
+			d_fl_err = d_fl_mpu ;
+		WHEN 2 =>
+			tek_rdy = ch_ready[2] ;
+			tek_end_of_ch = end_of_ch[2] ;
+			adr_wr_fl[8..0] = ( B"10" , adr_fl_dsp[6..0] ) ;
+			d_fl_err = dsp_err_flag ;
+		WHEN OTHERS =>
+			tek_rdy = GND ;
+			tek_end_of_ch = VCC ;
+			adr_wr_fl[8..0] = GND ;
+			d_fl_err = GND ;
+	END CASE ;
+
+	adr_fl_opm[6..0] = ( ch_cnt[2..1] , opm_num_ki[4..0] ) ;
+	adr_fl_mpu[4..0] = ( mpu_num_ki , ch_cnt[4..1] ) ;
+	adr_fl_dsp[6..0] = dsp_num_ki[6..0] ;
+
+	mux_err_opm.data[3..0][0] = opm_err_flags[3..0] ;
+	mux_err_opm.sel[1..0] = ch_cnt[2..1] ;
+	d_fl_opm = mux_err_opm.result[0] ;
+
+	mux_err_mpu.data[8..0][0] = mpu_err_flags[8..0] ;
+	mux_err_mpu.sel[3..0] = ch_cnt[4..1] ;
+	d_fl_mpu = mux_err_mpu.result[0] ;
+
+-- Память флагов ошибок
+	m_mem_err.clock = gclk ;
+
+-- Порт CPU
+	m_mem_err.address_a[6..0] = ( page_rd_mem , cpu_a[5..0] ) ;
+	m_mem_err.data_a[7..0] = GND ;
+	m_mem_err.wren_a = GND ;
+
+	cpu_d_err_o[7..0] = m_mem_err.q_a[7..0] ;
+
+-- Порт ПЛИС
+	m_mem_err.address_b[9..0] = ( !page_rd_mem , adr_wr_fl[8..0] ) ;
+	m_mem_err.data_b[0..0] = d_to_mem_err ;
+	m_mem_err.wren_b = wren_fl ;
+
+	d_from_mem_err = m_mem_err.q_b[0] ;
+
+	d_to_mem_err = ( (d_fl_err & en_fix_errs) # (d_from_mem_err & !clear_fl_err) ) ;
+
+-- Последние записанные флаги
+	last_fl_opm[6..0].clk = gclk ;
+	last_fl_opm[6..0].ena = ( (chan[1..0] == 0) & wren_fl ) ;
+	last_fl_opm[6..0] = adr_fl_opm[6..0] ;
+
+	last_fl_mpu[4..0].clk = gclk ;
+	last_fl_mpu[4..0].ena = ( (chan[1..0] == 1) & wren_fl ) ;
+	last_fl_mpu[4..0] = adr_fl_mpu[4..0] ;
+
+	last_fl_dsp[6..0].clk = gclk ;
+	last_fl_dsp[6..0].ena = ( (chan[1..0] == 2) & wren_fl ) ;
+	last_fl_dsp[6..0] = adr_fl_dsp[6..0] ;
+
+-- Смена страниц памяти, очистка флагов
+	det_exch_page[1..0].clk = gclk ;
+	det_exch_page[0] = ( (cpu_a[5..0] == H"00") & !cpu_wr & err_cs ) ;
+	det_exch_page[1] = det_exch_page[0] ;
+
+	en_exch_page = ( !det_exch_page[0] & det_exch_page[1] ) ;
+
+	page_rd_mem.clk = gclk ;
+	page_rd_mem.ena = en_exch_page ;
+	page_rd_mem = !page_rd_mem ;
+
+	fix_num_clr_fl.clk = gclk ;
+	fix_num_clr_fl = en_exch_page ;
+
+	num_clr_fl_opm[6..0].clk = gclk ;
+	num_clr_fl_opm[6..0].ena = fix_num_clr_fl ;
+	num_clr_fl_opm[6..0] = last_fl_opm[6..0] ;
+
+	num_clr_fl_mpu[4..0].clk = gclk ;
+	num_clr_fl_mpu[4..0].ena = fix_num_clr_fl ;
+	num_clr_fl_mpu[4..0] = last_fl_mpu[4..0] ;
+
+	num_clr_fl_dsp[6..0].clk = gclk ;
+	num_clr_fl_dsp[6..0].ena = fix_num_clr_fl ;
+	num_clr_fl_dsp[6..0] = last_fl_dsp[6..0] ;
+
+	clear_fl_opm.clk = gclk ;
+	IF ( en_exch_page ) THEN
+		clear_fl_opm = VCC ;
+	ELSIF ( !fix_num_clr_fl & (chan[1..0] == 0) & (adr_fl_opm[6..0] == num_clr_fl_opm[6..0]) & wren_fl ) THEN
+		clear_fl_opm = GND ;
+	ELSE
+		clear_fl_opm = clear_fl_opm ;
+	END IF ;
+
+	clear_fl_mpu.clk = gclk ;
+	IF ( en_exch_page ) THEN
+		clear_fl_mpu = VCC ;
+	ELSIF ( !fix_num_clr_fl & (chan[1..0] == 1) & (adr_fl_mpu[4..0] == num_clr_fl_mpu[4..0]) & wren_fl ) THEN
+		clear_fl_mpu = GND ;
+	ELSE
+		clear_fl_mpu = clear_fl_mpu ;
+	END IF ;
+
+	clear_fl_dsp.clk = gclk ;
+	IF ( en_exch_page ) THEN
+		clear_fl_dsp = VCC ;
+	ELSIF ( !fix_num_clr_fl & (chan[1..0] == 2) & (adr_fl_dsp[6..0] == num_clr_fl_dsp[6..0]) & wren_fl ) THEN
+		clear_fl_dsp = GND ;
+	ELSE
+		clear_fl_dsp = clear_fl_dsp ;
+	END IF ;
+
+	CASE ( chan[1..0] ) IS
+		WHEN 0 =>	clear_fl_err = clear_fl_opm ;
+		WHEN 1 =>	clear_fl_err = clear_fl_mpu ;
+		WHEN 2 =>	clear_fl_err = clear_fl_dsp ;
+		WHEN OTHERS =>	clear_fl_err = GND ;
+	END CASE ;
+
+END ;

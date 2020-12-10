@@ -1,0 +1,33 @@
+SUBDESIGN jumper
+(
+	clk :INPUT;
+	ena :INPUT=VCC;
+	inp:INPUT;
+	delay1 	:OUTPUT;
+	delay2 	:OUTPUT;
+	re		:OUTPUT;
+	ret 	:OUTPUT;
+	fe		:OUTPUT;
+	fet 	:OUTPUT;
+	ae		:OUTPUT;
+	aet 	:OUTPUT;
+	retd 	:OUTPUT;
+	fetd 	:OUTPUT;
+	aetd 	:OUTPUT;
+)
+--VARIABLE
+
+BEGIN
+	delay1 = dffe(.clk=clk, .ena = ena, .d = inp);
+	delay2 = dffe(.clk=clk, .ena = ena, .d = delay1);
+	re =  inp & !delay1;
+	fe = !inp &  delay1;
+	ae = re # fe;
+	ret = dffe(.clk=clk, .ena = ena, .d = re);
+	fet = dffe(.clk=clk, .ena = ena, .d = fe);
+	aet = dffe(.clk=clk, .ena = ena, .d = ae);
+	retd = dffe(.clk=clk, .ena = ena, .d = delay1 & !delay2);
+	fetd = dffe(.clk=clk, .ena = ena, .d = !delay1 & delay2);
+	aetd = dffe(.clk=clk, .ena = ena, .d = delay1 XOR delay2);
+END;
+

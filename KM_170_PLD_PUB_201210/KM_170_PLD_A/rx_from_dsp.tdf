@@ -1,0 +1,46 @@
+SUBDESIGN		rx_from_dsp
+(
+	f_32m
+,	d_i
+,	bit_cnt[11..0]
+				: INPUT ;
+
+	data_rx[24..0]
+,	en_rdy_d_rx
+,	num_slot_rx[6..0]
+				: OUTPUT ;
+)
+
+VARIABLE
+
+	d_rx_i				: DFF ;
+	shift_i[24..0]		: DFFE ;
+	cnt_dsp[11..0]		: NODE ;
+	en_rdy_d_rx			: NODE ;
+	num_slot_rx[6..0]	: DFFE ;
+	data_rx[24..0]		: DFFE ;
+
+BEGIN
+
+-- Входной сдвиговый регистр
+	d_rx_i.clk = f_32m ;
+	d_rx_i = d_i ;
+
+	shift_i[24..0].clk = f_32m ;
+	shift_i[24..0] = ( shift_i[23..0] , d_rx_i ) ;
+
+-- Счетчик разрядов
+	cnt_dsp[11..0] = ( bit_cnt[11..0] - 2 ) ;
+
+-- Входные КИ
+	en_rdy_d_rx = ( cnt_dsp[4..0] == 24 ) ;
+
+	num_slot_rx[6..0].clk = f_32m ;
+	num_slot_rx[6..0].ena = en_rdy_d_rx ;
+	num_slot_rx[6..0] = cnt_dsp[11..5] ;
+
+	data_rx[24..0].clk = f_32m ;
+	data_rx[24..0].ena = en_rdy_d_rx ;
+	data_rx[24..0] = shift_i[24..0] ;
+
+END ;

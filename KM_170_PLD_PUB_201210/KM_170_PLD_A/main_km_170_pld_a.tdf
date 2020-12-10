@@ -1,0 +1,811 @@
+--CONSTANT	CONST_DAY =			H"28" ;
+--CONSTANT	CONST_MONTH =		H"10" ;
+--CONSTANT	CONST_CENTURY =		H"20" ;
+--CONSTANT	CONST_YEAR =		H"20" ;
+
+PARAMETERS
+(
+	CONST_DAY =			H"28",
+	CONST_MONTH =		H"10",
+	CONST_CENTURY =		H"20",
+	CONST_YEAR =		H"20"
+);
+
+CONSTANT	REVISION =			"A" ;
+
+INCLUDE		"pll_32m_x4.inc" ;
+INCLUDE		"jumper.inc" ;
+INCLUDE		"rx_from_opm.inc" ;
+INCLUDE		"rx_from_mpu.inc" ;
+INCLUDE		"rx_from_dsp.inc" ;
+INCLUDE		"commutator.inc" ;
+INCLUDE		"test_sequence_ctrl.inc" ;
+INCLUDE		"tx_opm_to_pld.inc" ;
+INCLUDE		"tx_mpu_to_pld.inc" ;
+INCLUDE		"tx_dsp_to_pld.inc" ;
+---INCLUDE		"jjHDLC/jjHDLC.inc" ;
+
+SUBDESIGN		main_km_170_pld_a
+(
+	CS_PLD
+,	LBXA[9..0]
+,	LB_WR
+,	LB_RD
+--,	PORESET
+				: INPUT ;
+
+	LBDXin[7..0]	: INPUT;
+	LBDXout[7..0]	: OUTPUT;
+			
+
+	F16M
+,	STB_FRM
+--,	MASTER
+,	STB_SW
+,	VOICE_I[25..24]
+				: INPUT ;
+	FROM_OPMC[4..1]
+,	FROM_MPUC[9..1]
+,	FROM_OPMR[4..1]
+				: INPUT ;
+	DSP67_DX0
+--,	DSP67_DX1
+				: INPUT ;
+--
+	INT_CLS
+				: OUTPUT ;
+	VOICE[23..0]
+				: OUTPUT ;
+--	TO_C
+--				: OUTPUT ;
+--	FROM_C
+--				: INPUT ;
+--	PIN_F15
+--,	PIN_J15
+--,	U_RX
+--,	U_TX
+--,	PLD_SW1
+--,	PLD_SW2
+--,	TP_P
+--,	SPEC_TST1
+--,	SPEC_TST3
+--				: INPUT ;
+	PLD_RED
+,	PLD_GREEN
+,	LBDXoutEna
+				: OUTPUT ;
+				
+	opm_fs_ok[7..0]	: OUTPUT ;
+)
+
+VARIABLE
+
+--	LBDX[7..0]				: TRI ;
+	d_to_cpu[7..0]			: NODE ;
+	map_cs					: NODE ;
+	d_rd_map[7..0]			: NODE ;
+
+	reg_check_pld[1..0][7..0]	: DFFE ;
+	red_led					: DFFE ;
+	green_led				: DFFE ;
+
+	unblock_voice_d_opm[3..0]	: DFFE ;
+	unblock_voice_d_mpu[8..0]	: DFFE ;
+	unblock_voice_d_dsp			: DFFE ;
+
+	adr_ki_put_err[8..0]	: DFFE ;
+	do_put_err				: DFFE ;
+	res_do_err				: NODE ;
+
+	d_crc_map[31..0]		: NODE ;
+	crc_map_ready			: NODE ;
+	en_int_hdlc[7..0]		: DFFE ;
+
+	uid_gen_const[11..0]	: DFFE ;
+	uid_gen_ff[11..0]		: DFFE ;
+
+	f_32m					: GLOBAL ;
+	m_pll_32m_x4			: pll_32m_x4 ;
+	gc128m					: NODE ;
+	stb_rx					: DFF ;
+	bit_cnt[11..0]			: DFF ;
+	last_bit				: DFF ;
+	good_frame				: DFFE ;
+	res_frame				: DFFE ;
+	frame_cnt[12..0]		: DFFE ;
+	cycle_cnt[1..0]			: DFFE ;
+	stb_8hz					: NODE ;
+	stb_32hz				: NODE ;
+	res_cnt[2..0]			: DFFE ;
+	i_reset					: NODE ;
+
+	m_rx_from_opm			: rx_from_opm ;
+--	opm_fs_ok[7..0]			: NODE ;--opm_fs_ok[0]	--> red green
+	d_from_opm[3..0][24..0]	: NODE ;
+	unblock_d_opm_g[3..0]	: DFF ;
+	d_opm_to_comm[3..0][24..0]	: NODE ;
+	en_rdy_rx_opm			: NODE ;
+	num_slot_rx_opm[4..0]	: NODE ;
+	d_opm_i[3..0]			: NODE ;
+	en_rx_h_opm				: NODE ;
+	en_fix_rx_h_opm			: NODE ;
+
+	m_rx_from_mpu			: rx_from_mpu ;
+	mpu_fs_ok[8..0]			: NODE ;
+	d_from_mpu[8..0][24..0]	: NODE ;
+	unblock_d_mpu_g[8..0]	: DFF ;
+	d_mpu_to_comm[8..0][24..0]	: NODE ;
+	en_rdy_rx_mpu			: NODE ;
+	num_slot_rx_mpu			: NODE ;
+	d_mpu_i[8..0]			: NODE ;
+	en_rx_h_mpu				: NODE ;
+	en_rx_h_pult			: NODE ;
+
+	m_rx_from_dsp			: rx_from_dsp ;
+	d_from_dsp[24..0]		: NODE ;
+	unblock_d_dsp_g			: DFF ;
+	d_dsp_to_comm[24..0]	: NODE ;
+	en_rdy_rx_dsp			: NODE ;
+	num_slot_rx_dsp[6..0]	: NODE ;
+
+	m_commutator			: commutator ;
+	d_to_opm[3..0][24..0]	: NODE ;
+	d_to_mpu[8..0][24..0]	: NODE ;
+	d_to_dsp[24..0]			: NODE ;
+
+	m_test_sequence_ctrl	: test_sequence_ctrl ;
+
+	m_tx_opm_to_pld			: tx_opm_to_pld ;
+	en_rdy_tx_opm			: NODE ;
+	num_slot_tx_opm[4..0]	: NODE ;
+	d_to_pld_opm[3..0]		: NODE ;
+
+	m_tx_mpu_to_pld			: tx_mpu_to_pld ;
+	en_rdy_tx_mpu			: NODE ;
+	num_slot_tx_mpu			: NODE ;
+	d_to_pld_mpu[8..0]		: NODE ;
+	en_tx_h_mpu				: NODE ;
+	en_tx_h_pult			: NODE ;
+
+	m_tx_dsp_to_pld			: tx_dsp_to_pld ;
+	en_rdy_tx_dsp			: NODE ;
+	num_slot_tx_dsp[6..0]	: NODE ;
+	d_to_pld_dsp			: NODE ;
+
+---IF ( REVISION == "A" ) GENERATE
+---	hdlc_mpu[7..0]			: jjHDLC ;
+---	cs_h_mpu[7..0]			: NODE ;
+---	shift_h_mpu[8][3..0]	: DFFE ;
+---ELSE GENERATE
+---	hdlc_pult[7..0]			: jjHDLC ;
+---	cs_h_pult[7..0]			: NODE ;
+---	shift_h_pult[8]			: DFFE ;
+---END GENERATE ;
+---	int_h_mpu[7..0]			: NODE ;
+---	dbo_h_mpu[7..0][7..0]	: NODE ;
+---	d_tx_h_mpu[8..0]		: NODE ;
+---	int_h_pult[7..0]		: NODE ;
+---	dbo_h_pult[7..0][7..0]	: NODE ;
+---	d_tx_h_pult[8..0]		: NODE ;
+
+---IF ( REVISION == "A" ) GENERATE
+---	shift_rx_h_opm[3..0][4..0]	: DFFE ;
+---	data_rx_h_opm[3..0][4..0]	: DFFE ;
+---END GENERATE ;
+---	data_tx_h_opm[3..0][4..0]	: NODE ;
+
+---	sum_int_h				: DFF ;
+	INT_CLS					: TRI ;
+
+-- ������ CRC
+	rdy_rx_opm				: DFF ;
+	rdy_crc_opm				: DFF ;
+	voice_opm[3..0][15..0]	: NODE  ;
+	crc_opm[3..0][7..0]		: NODE ;
+	crc_c_opm[3..0][7..0]	: NODE ;
+	crc_err_opm[3..0]		: DFFE ;
+	det_rdy_err_opm[1..0]	: DFF ;
+	fix_err_opm				: DFF ;
+	opm_err[3..0][31..0]	: DFF ;
+	en_rd_err_opm[15..0]	: DFFE ;
+	en_rd_err_opm_g[15..0]	: DFF ;
+	res_rd_err_opm[15..0]	: DFF ;
+	res_opm_err[3..0][31..0]	: NODE ;
+
+	rdy_rx_mpu				: DFF ;
+	rdy_crc_mpu				: DFF ;
+	voice_mpu[8..0][15..0]	: NODE ;
+	crc_mpu[8..0][7..0]		: NODE ;
+	crc_c_mpu[8..0][7..0]	: NODE ;
+	crc_err_mpu[8..0]		: DFFE ;
+	det_rdy_err_mpu[1..0]	: DFF ;
+	fix_err_mpu				: DFF ;
+	mpu_err[1..0][8..0]		: DFF ;
+	en_rd_err_mpu[3..0]		: DFFE ;
+	en_rd_err_mpu_g[3..0]	: DFF ;
+	res_rd_err_mpu[3..0]	: DFF ;
+	res_mpu_err[1..0][8..0]	: NODE ;
+	
+	LBDXoutEna : NODE;
+
+BEGIN
+
+-- ���� CPU
+--- common registers
+
+	CASE ( LBXA[9..0] ) IS
+		WHEN ( H"0" , B"XXXXXXXX" ) =>	d_to_cpu[7..0] = d_rd_map[7..0] ;
+		WHEN ( H"1" , B"XXXXXXXX" ) =>	d_to_cpu[7..0] = d_rd_map[7..0] ;
+		WHEN ( H"2" , B"XXXXXXXX" ) =>	d_to_cpu[7..0] = d_rd_map[7..0] ;
+
+		WHEN H"300" =>		d_to_cpu[7..0] = H"0A" ;
+		WHEN H"301" =>		d_to_cpu[7..0] = H"5F" ;
+		WHEN H"302" =>		d_to_cpu[7..0] = reg_check_pld[1][7..0] ; ---reg_check_pld[0][7..0] ;  05.10.2020 - perecrest
+		WHEN H"303" =>		d_to_cpu[7..0] = reg_check_pld[0][7..0] ;---reg_check_pld[1][7..0] ;
+
+		WHEN H"304" =>		d_to_cpu[7..0] = CONST_DAY ;
+		WHEN H"305" =>		d_to_cpu[7..0] = CONST_MONTH ;
+		WHEN H"306" =>		d_to_cpu[7..0] = CONST_CENTURY ;
+		WHEN H"307" =>		d_to_cpu[7..0] = CONST_YEAR ;
+
+--		WHEN H"308" =>		d_to_cpu[7..0] = GND ; -- syncro with other plds
+
+		WHEN H"30A" =>		d_to_cpu[7..0] = ( 0,0,0,0,0,0,0, red_led ) ;
+		WHEN H"30B" =>		d_to_cpu[7..0] = ( 0,0,0,0,0,0,0, green_led ) ;
+
+		WHEN H"310" =>		d_to_cpu[7..0] = ( 0,0,0,0, unblock_voice_d_opm[3..0] ) ; -- Always VCC
+		WHEN H"311" =>		d_to_cpu[7..0] = unblock_voice_d_mpu[7..0] ; -- Always VCC
+		WHEN H"312" =>		d_to_cpu[7..0] = ( 0,0,0,0,0,0,0, unblock_voice_d_mpu[8] ) ;-- Always VCC
+		WHEN H"313" =>		d_to_cpu[7..0] = ( 0,0,0,0,0,0,0, unblock_voice_d_dsp ) ; -- Always VCC
+
+		WHEN H"317" =>		d_to_cpu[7..0] = adr_ki_put_err[7..0] ; -- Always GND-- --? not in reg list. not need for pub? 
+		WHEN H"318" =>		d_to_cpu[7..0] = ( 0,0,0,0,0,0,0, adr_ki_put_err[8] ) ; -- Always GND----? not in reg list. not need for pub? 
+
+		WHEN H"31B" =>		d_to_cpu[7..0] = mpu_fs_ok[7..0] ;
+		WHEN H"31C" =>		d_to_cpu[7..0] = ( 0,0,0,0,0,0,0, mpu_fs_ok[8] ) ;
+		WHEN H"31D" =>		d_to_cpu[7..0] = ( opm_fs_ok[7..4] , opm_fs_ok[3..0] ) ;
+
+		WHEN H"320" =>		d_to_cpu[7..0] = ( 0,0,0,0,0,0,0, crc_map_ready ) ;
+		WHEN H"321" =>		d_to_cpu[7..0] = d_crc_map[31..24] ;
+		WHEN H"322" =>		d_to_cpu[7..0] = d_crc_map[23..16] ;
+		WHEN H"323" =>		d_to_cpu[7..0] = d_crc_map[15..8] ;
+		WHEN H"324" =>		d_to_cpu[7..0] = d_crc_map[7..0] ;
+
+		WHEN H"328" =>		d_to_cpu[7..0] = GND;--( m_test_sequence_ctrl.cnt_of_tests[3..0] ,0,0,0, m_test_sequence_ctrl.test_is_on ) ; -- read only. not changed. still readable
+		WHEN H"329" =>		d_to_cpu[7..0] = GND;--m_test_sequence_ctrl.t_step_ok[7..0] ;
+		WHEN H"32A" =>		d_to_cpu[7..0] = ( 0,0,0,0, uid_gen_const[11..8] ) ;-- Always GND--
+		WHEN H"32B" =>		d_to_cpu[7..0] = uid_gen_const[7..0] ;-- Always GND--
+		WHEN H"32C" =>		d_to_cpu[7..0] = ( 0,0,0,0, uid_gen_ff[11..8] ) ;-- Always GND--
+		WHEN H"32D" =>		d_to_cpu[7..0] = uid_gen_ff[7..0] ;-- Always GND--
+
+---		WHEN H"340" =>		d_to_cpu[7..0] = ( int_h_mpu[7..0] # int_h_pult[7..0] ) ;
+---		WHEN H"341" =>		d_to_cpu[7..0] = en_int_hdlc[7..0] ;
+
+---		WHEN ( H"35" , B"XXXX" ) =>		d_to_cpu[7..0] = ( dbo_h_mpu[0][7..0] # dbo_h_pult[0][7..0] ) ;
+---		WHEN ( H"36" , B"XXXX" ) =>		d_to_cpu[7..0] = ( dbo_h_mpu[1][7..0] # dbo_h_pult[1][7..0] ) ;
+---		WHEN ( H"37" , B"XXXX" ) =>		d_to_cpu[7..0] = ( dbo_h_mpu[2][7..0] # dbo_h_pult[2][7..0] ) ;
+---		WHEN ( H"38" , B"XXXX" ) =>		d_to_cpu[7..0] = ( dbo_h_mpu[3][7..0] # dbo_h_pult[3][7..0] ) ;
+---		WHEN ( H"39" , B"XXXX" ) =>		d_to_cpu[7..0] = ( dbo_h_mpu[4][7..0] # dbo_h_pult[4][7..0] ) ;
+---		WHEN ( H"3A" , B"XXXX" ) =>		d_to_cpu[7..0] = ( dbo_h_mpu[5][7..0] # dbo_h_pult[5][7..0] ) ;
+---		WHEN ( H"3B" , B"XXXX" ) =>		d_to_cpu[7..0] = ( dbo_h_mpu[6][7..0] # dbo_h_pult[6][7..0] ) ;
+---		WHEN ( H"3C" , B"XXXX" ) =>		d_to_cpu[7..0] = ( dbo_h_mpu[7][7..0] # dbo_h_pult[7][7..0] ) ;
+
+-- ������ CRC
+		WHEN H"3D0" =>		d_to_cpu[7..0] = opm_err[0][7..0] ;
+		WHEN H"3D1" =>		d_to_cpu[7..0] = opm_err[0][15..8] ;
+		WHEN H"3D2" =>		d_to_cpu[7..0] = opm_err[0][23..16] ;
+		WHEN H"3D3" =>		d_to_cpu[7..0] = opm_err[0][31..24] ;
+		WHEN H"3D4" =>		d_to_cpu[7..0] = opm_err[1][7..0] ;
+		WHEN H"3D5" =>		d_to_cpu[7..0] = opm_err[1][15..8] ;
+		WHEN H"3D6" =>		d_to_cpu[7..0] = opm_err[1][23..16] ;
+		WHEN H"3D7" =>		d_to_cpu[7..0] = opm_err[1][31..24] ;
+		WHEN H"3D8" =>		d_to_cpu[7..0] = opm_err[2][7..0] ;
+		WHEN H"3D9" =>		d_to_cpu[7..0] = opm_err[2][15..8] ;
+		WHEN H"3DA" =>		d_to_cpu[7..0] = opm_err[2][23..16] ;
+		WHEN H"3DB" =>		d_to_cpu[7..0] = opm_err[2][31..24] ;
+		WHEN H"3DC" =>		d_to_cpu[7..0] = opm_err[3][7..0] ;
+		WHEN H"3DD" =>		d_to_cpu[7..0] = opm_err[3][15..8] ;
+		WHEN H"3DE" =>		d_to_cpu[7..0] = opm_err[3][23..16] ;
+		WHEN H"3DF" =>		d_to_cpu[7..0] = opm_err[3][31..24] ;
+
+		WHEN H"3E0" =>		d_to_cpu[7..0] = mpu_err[0][7..0] ;
+		WHEN H"3E1" =>		d_to_cpu[7..0] = ( 0,0,0,0,0,0,0, mpu_err[0][8] ) ;
+		WHEN H"3E2" =>		d_to_cpu[7..0] = mpu_err[1][7..0] ;
+		WHEN H"3E3" =>		d_to_cpu[7..0] = ( 0,0,0,0,0,0,0, mpu_err[1][8] ) ;
+
+		WHEN OTHERS =>		d_to_cpu[7..0] = GND ;
+	END CASE ;
+	
+	LBDXout[7..0] = d_to_cpu[7..0] & LBDXoutEna ;
+	LBDXoutEna	= ( !CS_PLD & !LB_RD );
+	
+--	LBDX[7..0].oe = ( !CS_PLD & !LB_RD ) ;
+
+	map_cs = ( !CS_PLD & (LBXA[9..8] <= 2) ) ;
+
+-- ����������� �������� ����
+	reg_check_pld[1..0][7..0].clk = LB_WR ;
+	reg_check_pld[0][7..0].ena = ( !CS_PLD & (LBXA[9..0] == H"302") ) ;
+	reg_check_pld[1][7..0].ena = ( !CS_PLD & (LBXA[9..0] == H"303") ) ;
+	reg_check_pld[0][7..0] = LBDXin[7..0] ;
+	reg_check_pld[1][7..0] = LBDXin[7..0] ;
+
+	red_led.clk = LB_WR ;
+	red_led.ena = ( !CS_PLD & (LBXA[9..0] == H"30A") ) ;
+	red_led = LBDXin[0] ;
+
+	green_led.clk = LB_WR ;
+	green_led.ena = ( !CS_PLD & (LBXA[9..0] == H"30B") ) ;
+	green_led = LBDXin[0] ;
+
+	PLD_RED = red_led ;
+	PLD_GREEN = green_led ;
+--- 
+-- ������������� ������� ������
+	unblock_voice_d_opm[3..0].clk = f_32m;--LB_WR ;--changed
+	unblock_voice_d_opm[3..0].ena = VCC;--( !CS_PLD & (LBXA[9..0] == H"310") ) ;--changed
+	unblock_voice_d_opm[3..0] = VCC;--LBDXin[3..0] ;--changed
+
+	unblock_voice_d_mpu[8..0].clk = f_32m;--LB_WR ;--changed
+	unblock_voice_d_mpu[7..0].ena = VCC;--( !CS_PLD & (LBXA[9..0] == H"311") ) ;--changed
+	unblock_voice_d_mpu[8].ena = VCC;--( !CS_PLD & (LBXA[9..0] == H"312") ) ;--changed
+	unblock_voice_d_mpu[7..0] = VCC;--LBDXin[7..0] ;--changed
+	unblock_voice_d_mpu[8] = VCC;--LBDXin[0] ;--changed
+
+	unblock_voice_d_dsp.clk = f_32m;--LB_WR ;--changed
+	unblock_voice_d_dsp.ena = VCC;--( !CS_PLD & (LBXA[9..0] == H"313") ) ;--changed
+	unblock_voice_d_dsp = VCC;--LBDXin[0] ;--changed
+
+-- ���� ������ � ����������
+	adr_ki_put_err[8..0].clk = LB_WR ;
+	adr_ki_put_err[7..0].ena = ( !CS_PLD & (LBXA[9..0] == H"317") ) ;
+	adr_ki_put_err[8].ena = ( !CS_PLD & (LBXA[9..0] == H"318") ) ;
+	adr_ki_put_err[7..0] = GND;--LBDXin[7..0] ; --changed
+	adr_ki_put_err[8] = GND;--LBDXin[0] ;--changed
+
+	do_put_err.clk = LB_WR ;
+	do_put_err.ena = ( !CS_PLD & (LBXA[9..0] == H"318") ) ;
+	do_put_err = GND ; --changed "VCC" was
+	do_put_err.clrn = !res_do_err ;
+
+-- ��� ���� ��������
+	uid_gen_const[11..0].clk = LB_WR ;
+	uid_gen_const[11..8].ena = ( !CS_PLD & (LBXA[9..0] == H"32A") ) ;
+	uid_gen_const[7..0].ena = ( !CS_PLD & (LBXA[9..0] == H"32B") ) ;
+	uid_gen_const[11..8] = GND ; --LBDXin[3..0] ;--changed
+	uid_gen_const[7..0] = GND ; --LBDXin[7..0] ;--changed
+
+	uid_gen_ff[11..0].clk = LB_WR ;
+	uid_gen_ff[11..8].ena = ( !CS_PLD & (LBXA[9..0] == H"32C") ) ;
+	uid_gen_ff[7..0].ena = ( !CS_PLD & (LBXA[9..0] == H"32D") ) ;
+	uid_gen_ff[11..8] = GND ; --LBDXin[3..0] ;--changed
+	uid_gen_ff[7..0] = GND ; --LBDXin[7..0] ;--changed
+
+
+
+-- �������� �������
+	f_32m = F16M ;
+
+	m_pll_32m_x4.inclk0 = F16M ;
+	gc128m = m_pll_32m_x4.c0 ;
+
+-- ������� �����
+	stb_rx.clk = f_32m ;
+	stb_rx = STB_FRM ;
+
+	bit_cnt[11..0].clk = f_32m ;
+	IF ( stb_rx ) THEN
+		bit_cnt[11..0] = 1 ;
+	ELSE
+		bit_cnt[11..0] = ( bit_cnt[11..0] + 1 ) ;
+	END IF ;
+
+	last_bit.clk = f_32m ;
+	last_bit = ( bit_cnt[11..0] == -2 ) ;
+
+	good_frame.clk = f_32m ;
+	good_frame.ena = stb_rx ;
+	good_frame = ( bit_cnt[11..0] == 0 ) ;
+
+	res_frame.clk = f_32m ;
+	res_frame.ena = ( bit_cnt[11..0] == 0 ) ;
+	res_frame = ( good_frame & !stb_rx ) ;
+
+	frame_cnt[12..0].clk = f_32m ;
+	frame_cnt[12..0].ena = last_bit ;
+	IF ( res_frame ) THEN
+		frame_cnt[12..0] = 1 ;
+	ELSE
+		frame_cnt[12..0] = ( frame_cnt[12..0] + 1 ) ;
+	END IF ;
+
+	cycle_cnt[1..0].clk = f_32m ;
+	cycle_cnt[1..0].ena = last_bit ;
+	cycle_cnt[1..0] = ( cycle_cnt[1..0] + 1 ) ;
+
+	stb_8hz  = jumper( .clk = f_32m , .inp = frame_cnt[9] ) RETURNS ( .ret ) ;
+	stb_32hz = jumper( .clk = f_32m , .inp = frame_cnt[7] ) RETURNS ( .ret ) ;
+
+-- Internal Reset
+	res_cnt[2..0].clk = f_32m ;
+	res_cnt[2..0].ena = stb_8hz ;
+	res_cnt[2..0] = ( (res_cnt[2..0] + 1) # (res_cnt[2..0] == VCC) ) ;
+	
+	i_reset = !res_cnt[2] ;
+
+-- ����� � OPM
+	m_rx_from_opm.f_32m = f_32m ;
+	m_rx_from_opm.d_i[7..0] = ( FROM_OPMR[4..1] , !FROM_OPMC[4],              --- �������� ���������� � �����
+	FROM_OPMC[3..1] ) ;
+---	m_rx_from_opm.d_i[7..0] = ( FROM_OPMR[4..1] , FROM_OPMC[4..1] ) ;
+
+	m_rx_from_opm.bit_cnt[11..0] = bit_cnt[11..0] ;
+	m_rx_from_opm.gc128m  = gc128m ;
+
+	opm_fs_ok[7..0] = m_rx_from_opm.fs_ok[7..0] ;
+	d_from_opm[3..0][24..0] = m_rx_from_opm.data_rx[3..0][24..0] ;
+	en_rdy_rx_opm = m_rx_from_opm.en_rdy_d_rx ;
+	num_slot_rx_opm[4..0] = m_rx_from_opm.num_slot_rx[4..0] ;
+	d_opm_i[3..0] = m_rx_from_opm.d_opm_i[3..0] ;
+	en_rx_h_opm = m_rx_from_opm.en_h_rx ;
+	en_fix_rx_h_opm = m_rx_from_opm.en_fix_h_rx ;
+
+	FOR i IN 0 TO 3 GENERATE
+		unblock_d_opm_g[i].clk = f_32m ;
+		unblock_d_opm_g[i] = unblock_voice_d_opm[i] ;
+
+		IF ( !unblock_d_opm_g[i] ) THEN
+			d_opm_to_comm[i][24..9] = H"FFFF" ;
+			d_opm_to_comm[i][8..1] = H"DB" ;
+			d_opm_to_comm[i][0] = VCC ;
+		ELSE
+			d_opm_to_comm[i][24..0] = d_from_opm[i][24..0] ;
+		END IF ;
+	END GENERATE ;
+
+-- CRC ERROR
+	rdy_rx_opm.clk = f_32m ;
+	rdy_rx_opm = en_rdy_rx_opm ;
+
+	rdy_crc_opm.clk = f_32m ;
+	rdy_crc_opm = rdy_rx_opm ;
+	
+	FOR i IN 0 TO 3 GENERATE
+		voice_opm[i][15..0] = d_from_opm[i][24..9] ;
+		crc_opm[i][7..0] = d_from_opm[i][8..1] ;
+
+		crc_c_opm[i][0] = !( voice_opm[i][14] XOR voice_opm[i][12] XOR voice_opm[i][8]  XOR voice_opm[i][7]  XOR voice_opm[i][6] XOR voice_opm[i][0] ) ;
+		crc_c_opm[i][1] = !( voice_opm[i][15] XOR voice_opm[i][14] XOR voice_opm[i][13] XOR voice_opm[i][12] XOR voice_opm[i][9] XOR voice_opm[i][6] XOR voice_opm[i][1] XOR voice_opm[i][0] ) ;
+		crc_c_opm[i][2] = !( voice_opm[i][15] XOR voice_opm[i][13] XOR voice_opm[i][12] XOR voice_opm[i][10] XOR voice_opm[i][8] XOR voice_opm[i][6] XOR voice_opm[i][2] XOR voice_opm[i][1] XOR voice_opm[i][0] ) ;
+		crc_c_opm[i][3] = !( voice_opm[i][14] XOR voice_opm[i][13] XOR voice_opm[i][11] XOR voice_opm[i][9]  XOR voice_opm[i][7] XOR voice_opm[i][3] XOR voice_opm[i][2] XOR voice_opm[i][1] ) ;
+		crc_c_opm[i][4] = !( voice_opm[i][15] XOR voice_opm[i][14] XOR voice_opm[i][12] XOR voice_opm[i][10] XOR voice_opm[i][8] XOR voice_opm[i][4] XOR voice_opm[i][3] XOR voice_opm[i][2] ) ;
+		crc_c_opm[i][5] = !( voice_opm[i][15] XOR voice_opm[i][13] XOR voice_opm[i][11] XOR voice_opm[i][9]  XOR voice_opm[i][5] XOR voice_opm[i][4] XOR voice_opm[i][3] ) ;
+		crc_c_opm[i][6] = !( voice_opm[i][14] XOR voice_opm[i][12] XOR voice_opm[i][10] XOR voice_opm[i][6]  XOR voice_opm[i][5] XOR voice_opm[i][4] ) ;
+		crc_c_opm[i][7] = !( voice_opm[i][15] XOR voice_opm[i][13] XOR voice_opm[i][11] XOR voice_opm[i][7]  XOR voice_opm[i][6] XOR voice_opm[i][5] ) ;
+
+		crc_err_opm[i].clk = f_32m ;
+		crc_err_opm[i].ena = rdy_crc_opm ;
+		crc_err_opm[i] = ( crc_opm[i][7..0] != crc_c_opm[i][7..0] ) ;
+	END GENERATE ;
+
+	det_rdy_err_opm[1..0].clk = gc128m ;
+	det_rdy_err_opm[0] = rdy_crc_opm ;
+	det_rdy_err_opm[1] = det_rdy_err_opm[0] ;
+
+	fix_err_opm.clk = gc128m ;
+	fix_err_opm = ( !det_rdy_err_opm[0] & det_rdy_err_opm[1] ) ;
+
+	FOR i IN 0 TO 3 GENERATE
+		FOR j in 0 TO 31 GENERATE
+			opm_err[i][j].clk = gc128m ;
+			opm_err[i][j] = ( (opm_err[i][j] & !res_opm_err[i][j]) # (crc_err_opm[i] & (num_slot_rx_opm[4..0] == j) & fix_err_opm) ) ;
+		END GENERATE ;
+	END GENERATE ;
+
+	FOR i IN 0 TO 15 GENERATE
+		en_rd_err_opm[i].clk = LB_RD ;
+		en_rd_err_opm[i].ena = ( !CS_PLD & (LBXA[9..0] == (H"3D0" + i)) ) ;
+		en_rd_err_opm[i] = VCC ;
+		en_rd_err_opm[i].clrn = !res_rd_err_opm[i] ;
+
+		en_rd_err_opm_g[i].clk = gc128m ;
+		en_rd_err_opm_g[i] = ( en_rd_err_opm[i] & !en_rd_err_opm_g[i] ) ;
+
+		res_rd_err_opm[i].clk = gc128m ;
+		res_rd_err_opm[i] = en_rd_err_opm_g[i] ;
+	END GENERATE ;
+
+	FOR i IN 0 TO 3 GENERATE
+		FOR j IN 0 TO 3 GENERATE
+			res_opm_err[i][(j*8+7)..j*8] = en_rd_err_opm_g[i*4 + j] ;
+		END GENERATE ;
+	END GENERATE ;
+
+-- ����� � MPU
+	m_rx_from_mpu.f_32m = f_32m ;
+	m_rx_from_mpu.d_i[8..0] = FROM_MPUC[9..1] ;
+	m_rx_from_mpu.bit_cnt[11..0] = bit_cnt[11..0] ;
+
+	mpu_fs_ok[8..0] = m_rx_from_mpu.fs_ok[8..0] ;
+	d_from_mpu[8..0][24..0] = m_rx_from_mpu.data_rx[8..0][24..0] ;
+	en_rdy_rx_mpu = m_rx_from_mpu.en_rdy_d_rx ;
+	num_slot_rx_mpu = m_rx_from_mpu.num_slot_rx ;
+	d_mpu_i[8..0] = m_rx_from_mpu.d_mpu_i[8..0] ;
+	en_rx_h_mpu = m_rx_from_mpu.en_h_mpu_rx ;
+	en_rx_h_pult = m_rx_from_mpu.en_h_pult_rx ;
+
+	FOR i IN 0 TO 8 GENERATE
+		unblock_d_mpu_g[i].clk = f_32m ;
+		unblock_d_mpu_g[i] = unblock_voice_d_mpu[i] ;
+
+		IF ( !unblock_d_mpu_g[i] ) THEN
+			d_mpu_to_comm[i][24..9] = H"FFFF" ;
+			d_mpu_to_comm[i][8..1] = H"DB" ;
+			d_mpu_to_comm[i][0] = VCC ;
+		ELSE
+			d_mpu_to_comm[i][24..0] = d_from_mpu[i][24..0] ;
+		END IF ;
+	END GENERATE ;
+
+-- CRC ERROR
+	rdy_rx_mpu.clk = f_32m ;
+	rdy_rx_mpu = en_rdy_rx_mpu ;
+
+	rdy_crc_mpu.clk = f_32m ;
+	rdy_crc_mpu = rdy_rx_mpu ;
+	
+	FOR i IN 0 TO 8 GENERATE
+		voice_mpu[i][15..0] = d_from_mpu[i][24..9] ;
+		crc_mpu[i][7..0] = d_from_mpu[i][8..1] ;
+
+		crc_c_mpu[i][0] = !( voice_mpu[i][14] XOR voice_mpu[i][12] XOR voice_mpu[i][8]  XOR voice_mpu[i][7]  XOR voice_mpu[i][6] XOR voice_mpu[i][0] ) ;
+		crc_c_mpu[i][1] = !( voice_mpu[i][15] XOR voice_mpu[i][14] XOR voice_mpu[i][13] XOR voice_mpu[i][12] XOR voice_mpu[i][9] XOR voice_mpu[i][6] XOR voice_mpu[i][1] XOR voice_mpu[i][0] ) ;
+		crc_c_mpu[i][2] = !( voice_mpu[i][15] XOR voice_mpu[i][13] XOR voice_mpu[i][12] XOR voice_mpu[i][10] XOR voice_mpu[i][8] XOR voice_mpu[i][6] XOR voice_mpu[i][2] XOR voice_mpu[i][1] XOR voice_mpu[i][0] ) ;
+		crc_c_mpu[i][3] = !( voice_mpu[i][14] XOR voice_mpu[i][13] XOR voice_mpu[i][11] XOR voice_mpu[i][9]  XOR voice_mpu[i][7] XOR voice_mpu[i][3] XOR voice_mpu[i][2] XOR voice_mpu[i][1] ) ;
+		crc_c_mpu[i][4] = !( voice_mpu[i][15] XOR voice_mpu[i][14] XOR voice_mpu[i][12] XOR voice_mpu[i][10] XOR voice_mpu[i][8] XOR voice_mpu[i][4] XOR voice_mpu[i][3] XOR voice_mpu[i][2] ) ;
+		crc_c_mpu[i][5] = !( voice_mpu[i][15] XOR voice_mpu[i][13] XOR voice_mpu[i][11] XOR voice_mpu[i][9]  XOR voice_mpu[i][5] XOR voice_mpu[i][4] XOR voice_mpu[i][3] ) ;
+		crc_c_mpu[i][6] = !( voice_mpu[i][14] XOR voice_mpu[i][12] XOR voice_mpu[i][10] XOR voice_mpu[i][6]  XOR voice_mpu[i][5] XOR voice_mpu[i][4] ) ;
+		crc_c_mpu[i][7] = !( voice_mpu[i][15] XOR voice_mpu[i][13] XOR voice_mpu[i][11] XOR voice_mpu[i][7]  XOR voice_mpu[i][6] XOR voice_mpu[i][5] ) ;
+
+		crc_err_mpu[i].clk = f_32m ;
+		crc_err_mpu[i].ena = rdy_crc_mpu ;
+		crc_err_mpu[i] = ( crc_mpu[i][7..0] != crc_c_mpu[i][7..0] ) ;
+	END GENERATE ;
+
+	det_rdy_err_mpu[1..0].clk = gc128m ;
+	det_rdy_err_mpu[0] = rdy_crc_mpu ;
+	det_rdy_err_mpu[1] = det_rdy_err_mpu[0] ;
+
+	fix_err_mpu.clk = gc128m ;
+	fix_err_mpu = ( !det_rdy_err_mpu[0] & det_rdy_err_mpu[1] ) ;
+
+	FOR i IN 0 TO 1 GENERATE
+		FOR j in 0 TO 8 GENERATE
+			mpu_err[i][j].clk = gc128m ;
+			mpu_err[i][j] = ( (mpu_err[i][j] & !res_mpu_err[i][j]) # (crc_err_mpu[j] & (num_slot_rx_mpu == i) & fix_err_mpu) ) ;
+		END GENERATE ;
+	END GENERATE ;
+
+	FOR i IN 0 TO 3 GENERATE
+		en_rd_err_mpu[i].clk = LB_RD ;
+		en_rd_err_mpu[i].ena = ( !CS_PLD & (LBXA[9..0] == (H"3E0" + i)) ) ;
+		en_rd_err_mpu[i] = VCC ;
+		en_rd_err_mpu[i].clrn = !res_rd_err_mpu[i] ;
+
+		en_rd_err_mpu_g[i].clk = gc128m ;
+		en_rd_err_mpu_g[i] = ( en_rd_err_mpu[i] & !en_rd_err_mpu_g[i] ) ;
+
+		res_rd_err_mpu[i].clk = gc128m ;
+		res_rd_err_mpu[i] = en_rd_err_mpu_g[i] ;
+	END GENERATE ;
+
+	res_mpu_err[0][7..0] = en_rd_err_mpu_g[0] ;
+	res_mpu_err[0][8] = en_rd_err_mpu_g[1] ;
+	res_mpu_err[1][7..0] = en_rd_err_mpu_g[2] ;
+	res_mpu_err[1][8] = en_rd_err_mpu_g[3] ;
+
+-- ����� � DSP
+	m_rx_from_dsp.f_32m = f_32m ;
+	m_rx_from_dsp.d_i = DSP67_DX0 ;
+	m_rx_from_dsp.bit_cnt[11..0] = bit_cnt[11..0] ;
+
+	d_from_dsp[24..0] = m_rx_from_dsp.data_rx[24..0] ;
+	en_rdy_rx_dsp = m_rx_from_dsp.en_rdy_d_rx ;
+	num_slot_rx_dsp[6..0] = m_rx_from_dsp.num_slot_rx[6..0] ;
+
+	unblock_d_dsp_g.clk = f_32m ;
+	unblock_d_dsp_g = unblock_voice_d_dsp ;
+
+	IF ( !unblock_d_dsp_g ) THEN
+		d_dsp_to_comm[24..9] = H"FFFF" ;
+		d_dsp_to_comm[8..1] = H"DB" ;
+		d_dsp_to_comm[0] = VCC ;
+	ELSE
+		d_dsp_to_comm[24..0] = d_from_dsp[24..0] ;
+	END IF ;
+
+-- ������ ����������
+	m_commutator.f_32m = f_32m ;
+	m_commutator.gclk = gc128m ;
+	m_commutator.bit_cnt[11..0] = bit_cnt[11..0] ;
+	m_commutator.last_bit = last_bit ;
+	m_commutator.sect_wr[1..0] = cycle_cnt[1..0] ;
+	m_commutator.data_opm_i[3..0][24..0] = d_opm_to_comm[3..0][24..0] ;
+	m_commutator.en_rdy_opm_i = en_rdy_rx_opm ;
+	m_commutator.num_slot_opm_i[4..0] = num_slot_rx_opm[4..0] ;
+	m_commutator.data_mpu_i[8..0][24..0] = d_mpu_to_comm[8..0][24..0] ;
+	m_commutator.en_rdy_mpu_i = en_rdy_rx_mpu ;
+	m_commutator.num_slot_mpu_i = num_slot_rx_mpu ;
+	m_commutator.data_dsp_i[24..0] = d_dsp_to_comm[24..0] ;
+	m_commutator.en_rdy_dsp_i = en_rdy_rx_dsp ;
+	m_commutator.num_slot_dsp_i[6..0] = num_slot_rx_dsp[6..0] ;
+	m_commutator.en_rdy_opm_o = en_rdy_tx_opm ;
+	m_commutator.num_slot_opm_o[4..0] = num_slot_tx_opm[4..0] ;
+	m_commutator.en_rdy_mpu_o = en_rdy_tx_mpu ;
+	m_commutator.num_slot_mpu_o = num_slot_tx_mpu ;
+	m_commutator.en_rdy_dsp_o = en_rdy_tx_dsp ;
+	m_commutator.num_slot_dsp_o[6..0] = num_slot_tx_dsp[6..0] ;
+	m_commutator.cpu_a[9..0] = LBXA[9..0] ;
+	m_commutator.cpu_d_i[7..0] = LBDXin[7..0] ;
+	m_commutator.map_cs = map_cs ;
+	m_commutator.cpu_wr = LB_WR ;
+	m_commutator.cpu_rd = LB_RD ;
+	m_commutator.stb_wr_sw = STB_SW ;
+	m_commutator.d_ki_const[24..0] = m_test_sequence_ctrl.d_ki_const[24..0] ;
+	m_commutator.d_ki_ff[24..0] = m_test_sequence_ctrl.d_ki_ff[24..0] ;
+	m_commutator.do_put_err = do_put_err ;
+	m_commutator.adr_ki_put_err[8..0] = adr_ki_put_err[8..0] ;
+
+	d_to_opm[3..0][24..0] = m_commutator.data_opm_o[3..0][24..0] ;
+	d_to_mpu[8..0][24..0] = m_commutator.data_mpu_o[8..0][24..0] ;
+	d_to_dsp[24..0] = m_commutator.data_dsp_o[24..0] ;
+	d_rd_map[7..0] = m_commutator.cpu_d_o[7..0] ;
+	d_crc_map[31..0] = m_commutator.crc_reg[31..0] ;
+	crc_map_ready = m_commutator.crc_ready ;
+	res_do_err = m_commutator.res_do_err ;
+
+-- �������� ������������������
+	m_test_sequence_ctrl.f_32m = f_32m ;
+	m_test_sequence_ctrl.last_bit = last_bit ;
+	m_test_sequence_ctrl.uid_const[11..0] = uid_gen_const[11..0] ;
+	m_test_sequence_ctrl.uid_ff[11..0] = uid_gen_ff[11..0] ;
+	m_test_sequence_ctrl.cmd_do_test = VOICE_I[25] ;
+	m_test_sequence_ctrl.sync_cnt_uid = VOICE_I[24] ;
+	m_test_sequence_ctrl.pre_a_rd_const[7..0] = m_commutator.pre_a_rd_const[7..0] ;
+	m_test_sequence_ctrl.d_const_ff_i[24..0] = m_commutator.d_const_ff_i[24..0] ;
+	m_test_sequence_ctrl.num_ki_const_i[7..0] = m_commutator.num_ki_const_i[7..0] ;
+	m_test_sequence_ctrl.en_const_i = m_commutator.en_const_i ;
+	m_test_sequence_ctrl.en_ff_i = m_commutator.en_ff_i ;
+
+-- ��� OPM
+	m_tx_opm_to_pld.f_32m = f_32m ;
+	m_tx_opm_to_pld.bit_cnt[11..0] = bit_cnt[11..0] ;
+	m_tx_opm_to_pld.data_tx[3..0][24..0] = d_to_opm[3..0][24..0] ;
+	m_tx_opm_to_pld.data_h_tx[3..0][4..0] = vcc;---data_tx_h_opm[3..0][4..0] ;
+
+	en_rdy_tx_opm = m_tx_opm_to_pld.en_rdy_d_tx ;
+	num_slot_tx_opm[4..0] = m_tx_opm_to_pld.num_slot_tx[4..0] ;
+	d_to_pld_opm[3..0] = m_tx_opm_to_pld.d_to_pld[3..0] ;
+
+-- ��� MPU
+	m_tx_mpu_to_pld.f_32m = f_32m ;
+	m_tx_mpu_to_pld.bit_cnt[11..0] = bit_cnt[11..0] ;
+	m_tx_mpu_to_pld.data_tx[8..0][24..0] = d_to_mpu[8..0][24..0] ;
+	m_tx_mpu_to_pld.d_h_mpu[8..0] = vcc;---d_tx_h_mpu[8..0] ;
+	m_tx_mpu_to_pld.d_h_pult[8..0] =  vcc;---d_tx_h_pult[8..0] ;
+
+	en_rdy_tx_mpu = m_tx_mpu_to_pld.en_rdy_d_tx ;
+	num_slot_tx_mpu = m_tx_mpu_to_pld.num_slot_tx ;
+	d_to_pld_mpu[8..0] = m_tx_mpu_to_pld.d_to_pld[8..0] ;
+	en_tx_h_mpu = m_tx_mpu_to_pld.en_h_mpu_tx ;
+	en_tx_h_pult = m_tx_mpu_to_pld.en_h_pult_tx ;
+
+-- ��� DSP
+	m_tx_dsp_to_pld.f_32m = f_32m ;
+	m_tx_dsp_to_pld.bit_cnt[11..0] = bit_cnt[11..0] ;
+	m_tx_dsp_to_pld.data_tx[24..0] = d_to_dsp[24..0] ;
+
+	en_rdy_tx_dsp = m_tx_dsp_to_pld.en_rdy_d_tx ;
+	num_slot_tx_dsp[6..0] = m_tx_dsp_to_pld.num_slot_tx[6..0] ;
+	d_to_pld_dsp = m_tx_dsp_to_pld.d_to_pld ;
+
+-- ������ �� ���� C
+	VOICE[3..0] = d_to_pld_opm[3..0] ;
+	VOICE[12..4] = d_to_pld_mpu[8..0] ;
+	VOICE[13] = d_to_pld_dsp ;
+	VOICE[23..14] = VCC ;
+
+-- HDLC MPU/PULT
+---IF ( REVISION == "A" ) GENERATE
+---	FOR i IN 0 TO 7 GENERATE
+---		hdlc_mpu[i].gc16m = f_32m ;
+---		hdlc_mpu[i].iReset = i_reset ;
+---		hdlc_mpu[i].FS_OK = VCC ;
+---		hdlc_mpu[i].stRxStrob = en_rx_h_mpu ;
+---		hdlc_mpu[i].stTxStrob = en_tx_h_mpu ;
+---		hdlc_mpu[i].RxStream = d_mpu_i[i] ;
+
+---		hdlc_mpu[i].CS = cs_h_mpu[i] ;
+---		hdlc_mpu[i].WR = LB_WR ;
+---		hdlc_mpu[i].cpuRD = !LB_RD ;
+---		hdlc_mpu[i].Addr[3..0] = LBXA[3..0] ;
+---		hdlc_mpu[i].dbIn[7..0] = LBDXin[7..0] ;
+---		hdlc_mpu[i].stbTimer = stb_32hz ;
+
+---		int_h_mpu[i] = hdlc_mpu[i].All_IRQ ;
+---		dbo_h_mpu[i][7..0] = hdlc_mpu[i].dbOut[7..0] ;
+
+---		d_tx_h_mpu[i] = hdlc_mpu[i].TxStream ;
+---	END GENERATE ;
+
+---	d_tx_h_mpu[8] = shift_h_mpu[8][3] ;
+
+---	shift_h_mpu[8][3..0].clk = f_32m ;
+---	shift_h_mpu[8][3..0].ena = ( en_rx_h_mpu # en_tx_h_mpu ) ;
+---	shift_h_mpu[8][3..0] = ( shift_h_mpu[8][2..0] , (d_mpu_i[8] # !en_rx_h_mpu) ) ;
+
+---	d_tx_h_pult[8..0] = VCC ;
+
+---	int_h_pult[7..0] = GND ;
+--	dbo_h_pult[7..0][7..0] = GND ;
+---ELSE GENERATE
+---	FOR i IN 0 TO 7 GENERATE
+---		hdlc_pult[i].gc16m = f_32m ;
+---		hdlc_pult[i].iReset = i_reset ;
+---		hdlc_pult[i].FS_OK = VCC ;
+---		hdlc_pult[i].stRxStrob = en_rx_h_pult ;
+---		hdlc_pult[i].stTxStrob = en_tx_h_pult ;
+---		hdlc_pult[i].RxStream = d_mpu_i[i] ;
+
+---		hdlc_pult[i].CS = cs_h_pult[i] ;
+---		hdlc_pult[i].WR = LB_WR ;
+---		hdlc_pult[i].cpuRD = !LB_RD ;
+---		hdlc_pult[i].Addr[3..0] = LBXA[3..0] ;
+---		hdlc_pult[i].dbIn[7..0] = LBDXin[7..0] ;
+---		hdlc_pult[i].stbTimer = stb_32hz ;
+
+---		int_h_pult[i] = hdlc_pult[i].All_IRQ ;
+---		dbo_h_pult[i][7..0] = hdlc_pult[i].dbOut[7..0] ;
+
+---		d_tx_h_pult[i] = hdlc_pult[i].TxStream ;
+---	END GENERATE ;
+
+---	d_tx_h_pult[8] = shift_h_pult[8] ;
+
+---	shift_h_pult[8].clk = f_32m ;
+---	shift_h_pult[8].ena = en_rx_h_pult ;
+---	shift_h_pult[8] = d_mpu_i[8] ;
+
+---	d_tx_h_mpu[8..0] = VCC ;
+
+---	int_h_mpu[7..0] = GND ;
+---	dbo_h_mpu[7..0][7..0] = GND ;
+---END GENERATE ;
+
+-- HDLC OPM
+---IF ( REVISION == "A" ) GENERATE
+---	FOR i IN 0 TO 3 GENERATE
+---		shift_rx_h_opm[i][4..0].clk = f_32m ;
+---		shift_rx_h_opm[i][4..0].ena = en_rx_h_opm ;
+---		shift_rx_h_opm[i][4..0] = ( shift_rx_h_opm[i][3..0] , d_opm_i[i] ) ;
+
+---		data_rx_h_opm[i][4..0].clk = f_32m ;
+---		data_rx_h_opm[i][4..0].ena = en_fix_rx_h_opm ;
+---		data_rx_h_opm[i][4..0] = shift_rx_h_opm[i][4..0] ;
+
+---		data_tx_h_opm[i][4..0] = data_rx_h_opm[i][4..0] ;
+---	END GENERATE ;
+---ELSE GENERATE
+---	data_tx_h_opm[3..0][4..0] = VCC ;
+---END GENERATE ;
+
+-- INTERRUPT
+---	sum_int_h.clk = f_32m ;
+---	sum_int_h = ( ((int_h_mpu[7..0] # int_h_pult[7..0]) & en_int_hdlc[7..0]) != 0 ) ;
+
+---	INT_CLS = !sum_int_h ;
+
+	
+	
+
+END ;

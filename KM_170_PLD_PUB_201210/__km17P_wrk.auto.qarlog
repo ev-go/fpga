@@ -1,0 +1,37 @@
+Quartus II Archive log --	C:/Logic/km170/201103/KM_170_PLD_PUB/__km17P_wrk.auto.qarlog
+
+Archive:	C:/Logic/km170/201103/KM_170_PLD_PUB/__km17P_wrk.auto.qar
+Date:		Thu Dec 10 21:10:58 2020
+Quartus II 64-Bit		15.0.0 Build 145 04/22/2015 SJ Web Edition
+
+	=========== Files Selected: ===========
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/altsyncram_4fg2.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/altsyncram_65q1.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/altsyncram_99o1.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/altsyncram_b9o1.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/altsyncram_dsh2.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/altsyncram_j301.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/km17P_wrk.cbx.xml
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/km17_Public.km17P_full0.rtl.mif
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/km17_Public.qpf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/mux_0tc.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/mux_7tc.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/mux_arc.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/mux_hrc.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/mux_tsc.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/mux_vsc.tdf
+C:/Logic/km170/201103/KM_170_PLD_PUB/db/pll_32m_x4_altpll.v
+PLLJ_PLLSPE_INFO.txt
+__km17P_wrk.auto.qarlog
+assignment_defaults.qdf
+km17P_Full_assignment_defaults.qdf
+km17P_full.tdf
+km17P_wrk.flow.rpt
+km17P_wrk.map.rpt
+km17P_wrk.map.summary
+km17P_wrk.qsf
+km17_Public_tmp_archive.qarlog
+	======= Total: 26 files to archive =======
+
+	================ Status: ===============
+All files archived successfully.

@@ -1,0 +1,5 @@
+PLL_Name	main_km_170_pld_c:Pld_c|pll_32m_x4:m_pll_32m_x4|altpll:altpll_component|pll_32m_x4_altpll:auto_generated|pll1
+PLLJITTER	35
+PLLSPEmax	84
+PLLSPEmin	-53
+
